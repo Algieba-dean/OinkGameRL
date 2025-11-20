@@ -1,7 +1,7 @@
 [project]
 name = "oink-games"
 version = "0.1.0"
-description = "Add your description here"
+description = "Try to simulate oink games for RL"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
