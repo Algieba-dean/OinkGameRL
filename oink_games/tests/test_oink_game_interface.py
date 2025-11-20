@@ -7,7 +7,7 @@ import gymnasium as gym
 class DummyOinkGame(OinkGame):
     def __init__(self):
         super().__init__()
-        self.observation_space = gym.spaces.Discrete[10]
+        self.observation_space = gym.spaces.Discrete(10)
         self.action_space = gym.spaces.Discrete(2)
 
     def _apply_action(self, action):
