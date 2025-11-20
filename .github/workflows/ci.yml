@@ -1,27 +1,45 @@
 name: CI
 
 on:
-  # 允许手动点击按钮 (调试专用)
   workflow_dispatch:
-  # 监听 master 分支 push
   push:
-    branches: ["master"]
-  # 每天跑一次
-  schedule:
-    - cron: "0 0 * * *"
+    branches:
+      - master
+    paths:
+      - "oink_games/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "oink_games/**"
 
 jobs:
-  debug-test:
+  tests:
+    name: Run Pytest with uv
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./oink_games
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Test Echo
-        run: echo "Action 终于触发了！"
-        
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "oink_games/uv.lock"
 
-      - name: Check uv version
-        run: uv --version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run pytest
+        run: uv run pytest tests
