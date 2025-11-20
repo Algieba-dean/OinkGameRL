@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  # 允许手动点击按钮 (调试专用)
+  workflow_dispatch:
+  # 监听 master 分支 push
+  push:
+    branches: ["master"]
+  # 每天跑一次
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  debug-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test Echo
+        run: echo "Action 终于触发了！"
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Check uv version
+        run: uv --version
