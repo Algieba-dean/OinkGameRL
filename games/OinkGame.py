@@ -13,7 +13,6 @@ class OinkGame(ABC, gym.Env):
 
         self.current_player_idx: int = 0
         self.num_players: int = 0
-        self.seed: int = 213
         self.render_mode: Optional[str] = render_mode
 
     @abstractmethod
@@ -47,6 +46,22 @@ class OinkGame(ABC, gym.Env):
         raise NotImplementedError
 
     @abstractmethod
+    def _reset_logic(self, seed: int, options: Optional[dict[str, Any]]) -> None:
+        """real reset logic, for initial card set, reset score, orgnize cards
+
+        Args:
+            seed (int): random seed
+            options (Optional[dict]): optional params for reset logics, like player number, game difficulty
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def _render_text(self) -> str:
         raise NotImplementedError
 
@@ -65,8 +80,8 @@ class OinkGame(ABC, gym.Env):
     def reset(
         self, seed: int | None = None, options: dict[str, Any] | None = None
     ) -> tuple[Any, dict[str, Any]]:
-        self.seed = seed
         super().reset(seed=seed, options=options)
+        self._reset_logic(seed=seed, options=options)
         observation = self._get_observation(self.current_player_idx)
         global_state = self._get_global_state()
         action_mask = self._get_action_mask(player_idx=self.current_player_idx)

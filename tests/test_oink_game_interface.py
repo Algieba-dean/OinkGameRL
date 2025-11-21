@@ -22,6 +22,9 @@ class DummyOinkGame(OinkGame):
     def _get_observation(self, player_idx):
         return 0
 
+    def _reset_logic(self, seed, options):
+        return None
+
     def _render_text(self):
         return f"{__class__}"
 
