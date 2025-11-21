@@ -5,23 +5,16 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "oink_games/**"
-      - ".github/workflows/ci.yml"
   pull_request:
     branches:
       - master
-    paths:
-      - "oink_games/**"
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   tests:
     name: Run Pytest with uv
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./oink_games
 
     steps:
       - name: Checkout code
@@ -31,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "oink_games/uv.lock"
+          cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
