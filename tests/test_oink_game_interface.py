@@ -1,10 +1,10 @@
 import pytest
 from typing import SupportsFloat
-from games.OinkGame import OinkGame
+from games.OinkGame import OinkGameEnv
 import gymnasium as gym
 
 
-class DummyOinkGame(OinkGame):
+class DummyOinkGameEnv(OinkGameEnv):
     def __init__(self):
         super().__init__()
         self.observation_space = gym.spaces.Discrete(10)
@@ -32,7 +32,7 @@ class DummyOinkGame(OinkGame):
 class TestGymContract:
     @pytest.fixture
     def env(self):
-        return DummyOinkGame()
+        return DummyOinkGameEnv()
 
     def test_is_gym_environment(self, env):
         assert isinstance(env, gym.Env)
@@ -45,7 +45,7 @@ class TestGymContract:
         reset_result = env.reset(seed=213)
         assert isinstance(reset_result, tuple)
         assert len(reset_result) == 2
-        obs, info = reset_result
+        _, info = reset_result
 
         assert isinstance(info, dict)
 
@@ -56,8 +56,17 @@ class TestGymContract:
         step_result = env.step(action=0)
         assert isinstance(step_result, tuple)
         assert len(step_result) == 5
-        observation, reward, terminated, truncated, info = step_result
+        _, reward, terminated, truncated, info = step_result
         assert isinstance(reward, SupportsFloat)
         assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
+        # TODO check if info contains correct keys,values format
+
+
+class TestMultiAgentUsage:
+    # TODO
+    # 1. test if the _get_observation,_get_global_state, _get_action_mask works, as we might need them in wrapper
+    # 2. test if reset, step, render works
+    # 2.1 for step, should check if all returns are back to according player idx, and format
+    ...

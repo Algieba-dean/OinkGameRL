@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 import gymnasium as gym
 
 
-class OinkGame(ABC, gym.Env):
+class OinkGameEnv(ABC, gym.Env):
     metadata = {"render_models": ["human", "json", "ansi"]}
 
     def __init__(self, render_mode: Optional[str] = None):
@@ -57,7 +57,7 @@ class OinkGame(ABC, gym.Env):
             NotImplementedError: _description_
 
         Returns:
-            _type_: _description_
+            _type_: None
         """
         raise NotImplementedError
 
@@ -66,10 +66,20 @@ class OinkGame(ABC, gym.Env):
         raise NotImplementedError
 
     def step(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
+        """apply action for current player idx
+
+        Args:
+            action (Any): the action which agent/player can play
+
+        Returns:
+            tuple[Any, float, bool, bool, dict[str, Any]]: the observation of updated player idx, the reward of the player who took action, terminated:is game done, truncated, info:contains action mask for new player idx
+        """
 
         reward, terminated = self._apply_action(action=action)
         truncated = False  # boardgame no need truncted
-        observation = self._get_observation(self.current_player_idx)
+        observation = self._get_observation(
+            self.current_player_idx
+        )  # current player idx already updated, so it's the new players
         global_state = self._get_global_state()
         action_mask = self._get_action_mask(player_idx=self.current_player_idx)
 
