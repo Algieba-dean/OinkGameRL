@@ -15,6 +15,10 @@ class AutoOpponentWrapper(gym.Wrapper):
         super().__init__(env)
         self.bots = bots
         self.ego_player_idx = ego_player_idx
+        if self.ego_player_idx in self.bots.keys():
+            raise ValueError(
+                f"ego player idx is occupied by bots idx, ego:{self.ego_player_idx}, bot:{self.bots.keys()}"
+            )
 
     @staticmethod
     def __need_process_opponent_turns(
@@ -82,13 +86,11 @@ class AutoOpponentWrapper(gym.Wrapper):
             ego_player_idx=self.ego_player_idx,
         ):
             # let bots run
-            observation, reward, terminated, truncated, info = (
-                self.__process_opponent_turns(
-                    previous_observation=observation,
-                    terminated=terminated,
-                    truncated=truncated,
-                    previous_info=info,
-                )
+            observation, _, terminated, truncated, info = self.__process_opponent_turns(
+                previous_observation=observation,
+                terminated=terminated,
+                truncated=truncated,
+                previous_info=info,
             )
 
         return observation, reward, terminated, truncated, info
