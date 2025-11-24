@@ -34,6 +34,13 @@ class TestGymContract:
     def env(self):
         return DummyOinkGameEnv()
 
+    @staticmethod
+    def assert_info(info: dict):
+        assert isinstance(info, dict)
+        assert "global_state" in info.keys
+        assert "action_mask" in info.keys
+        assert isinstance(info.get("action_mask"), list)
+
     def test_is_gym_environment(self, env):
         assert isinstance(env, gym.Env)
 
@@ -47,8 +54,7 @@ class TestGymContract:
         assert len(reset_result) == 2
         _, info = reset_result
 
-        assert isinstance(info, dict)
-
+        self.assert_info(info=info)
         assert env.np_random is not None
 
     def test_step_signature(self, env):
@@ -60,8 +66,8 @@ class TestGymContract:
         assert isinstance(reward, SupportsFloat)
         assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
-        assert isinstance(info, dict)
-        # TODO check if info contains correct keys,values format
+
+        self.assert_info(info=info)
 
 
 class TestMultiAgentUsage:
