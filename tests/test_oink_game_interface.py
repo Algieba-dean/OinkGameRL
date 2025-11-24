@@ -37,8 +37,8 @@ class TestGymContract:
     @staticmethod
     def assert_info(info: dict):
         assert isinstance(info, dict)
-        assert "global_state" in info.keys
-        assert "action_mask" in info.keys
+        assert "global_state" in info.keys()
+        assert "action_mask" in info.keys()
         assert isinstance(info.get("action_mask"), list)
 
     def test_is_gym_environment(self, env):
