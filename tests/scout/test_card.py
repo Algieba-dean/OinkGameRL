@@ -46,3 +46,7 @@ class TestCard:
             match="property 'supported_players' of 'Card' object has no setter",
         ):
             card.supported_players = [2, 3, 4, 5]
+
+    def test_card_display(self):
+        card = self.card()
+        assert str(card) == f"[{card.top}]/{card.bottom}"
