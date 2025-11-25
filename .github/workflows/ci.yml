@@ -13,7 +13,7 @@ on:
 
 jobs:
   tests:
-    name: Run Pytest with uv
+    name: Run Pytest and Coverage
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,19 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
+        # 确保安装了 pytest-cov 等所有 dev 依赖
         run: uv sync --all-extras --dev
 
       - name: Run pytest
-        run: uv run pytest tests
+        # 注意：这里去掉了 'tests' 参数，因为 pyproject.toml 里已经配置了 testpaths = ["tests"]
+        # uv run pytest 会自动读取 addopts 中的 --cov 参数并生成报告
+        run: uv run pytest
+
+      - name: Upload Coverage HTML Report
+        uses: actions/upload-artifact@v4
+        # 使用 if: always() 确保即使测试挂了（比如断言失败），你依然能拿到覆盖率报告来分析原因
+        if: always()
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 7
