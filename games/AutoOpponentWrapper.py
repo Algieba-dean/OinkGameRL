@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Any, TYPE_CHECKING
 import gymnasium as gym
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from GameAgent import GameAgent
     from OinkGame import OinkGameEnv
 
