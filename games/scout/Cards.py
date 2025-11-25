@@ -27,7 +27,7 @@ class Card:
         return f"[{self.top}]/{self.bottom}"
 
     def __repr__(self):
-        return self.__str__
+        return self.__str__()
 
 
 class Cards: ...

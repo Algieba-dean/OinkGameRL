@@ -50,3 +50,4 @@ class TestCard:
     def test_card_display(self):
         card = self.card()
         assert str(card) == f"[{card.top}]/{card.bottom}"
+        assert repr(card) == f"[{card.top}]/{card.bottom}"
