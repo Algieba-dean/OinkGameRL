@@ -5,28 +5,41 @@ import gymnasium as gym
 
 
 class DummyOinkGameEnv(OinkGameEnv):
-    def __init__(self):
-        super().__init__()
+    OBSERVATION = 101
+    GLOBAL_STATE = {"step": 0}
+    ACTION_MASK = [1, 1]
+    REWARD = 1.0
+    TERMINATED = False
+    RENDER_TEXT = "DummyOinkGameEnv"
+
+    def __init__(self, render_mode=None):
+        super().__init__(render_mode=render_mode)
         self.observation_space = gym.spaces.Discrete(10)
         self.action_space = gym.spaces.Discrete(2)
+        self.reset_called_count = 0
+        self.step_called_count = 0
+        self.render_called_count = 0
 
     def _apply_action(self, action):
-        return 1.0, False
+        self.step_called_count += 1
+        return self.REWARD, self.TERMINATED
 
     def _get_action_mask(self, player_idx):
-        return [1, 1]
+        return self.ACTION_MASK
 
     def _get_global_state(self):
-        return {"step": 0}
+        return self.GLOBAL_STATE
 
     def _get_observation(self, player_idx):
-        return 0
+        return self.OBSERVATION
 
     def _reset_logic(self, seed, options):
+        self.reset_called_count += 1
         return None
 
     def _render_text(self):
-        return f"{__class__}"
+        self.render_called_count += 1
+        return self.RENDER_TEXT
 
 
 class TestGymContract:
@@ -71,6 +84,52 @@ class TestGymContract:
 
 
 class TestMultiAgentUsage:
+    @pytest.mark.parametrize(
+        argnames="render_mode, expected_result",
+        argvalues=[
+            (None, None),
+            ("human", DummyOinkGameEnv.RENDER_TEXT),
+            ("ansi", DummyOinkGameEnv.RENDER_TEXT),
+            ("json", DummyOinkGameEnv.GLOBAL_STATE),
+        ],
+        ids=["None", "human", "ansi", "json"],
+    )
+    def test_render(self, render_mode, expected_result):
+        env = DummyOinkGameEnv(render_mode=render_mode)
+        result = env.render()
+        assert result == expected_result
+
+    def test_invalid_render(self):
+        with pytest.raises(
+            NotImplementedError, match="render mode .* is not supported"
+        ):
+            env = DummyOinkGameEnv(render_mode="dummy")
+
+    def test_step(self):
+        env = DummyOinkGameEnv()
+
+        env.reset()
+        observation, reward, terminated, truncated, info = env.step(action=1)
+        assert observation == DummyOinkGameEnv.OBSERVATION
+        assert reward == DummyOinkGameEnv.REWARD
+        assert terminated == DummyOinkGameEnv.TERMINATED
+        assert truncated == False
+        assert info == {
+            "global_state": DummyOinkGameEnv.GLOBAL_STATE,
+            "action_mask": DummyOinkGameEnv.ACTION_MASK,
+        }
+        assert env.step_called_count == 1
+
+    def test_reset(self):
+        env = DummyOinkGameEnv()
+        observation, info = env.reset()
+        assert observation == DummyOinkGameEnv.OBSERVATION
+        assert info == {
+            "global_state": DummyOinkGameEnv.GLOBAL_STATE,
+            "action_mask": DummyOinkGameEnv.ACTION_MASK,
+        }
+        assert env.reset_called_count == 1
+
     # TODO
     # 1. test if the _get_observation,_get_global_state, _get_action_mask works, as we might need them in wrapper
     # 2. test if reset, step, render works

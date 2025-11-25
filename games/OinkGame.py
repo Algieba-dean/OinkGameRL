@@ -4,7 +4,7 @@ import gymnasium as gym
 
 
 class OinkGameEnv(ABC, gym.Env):
-    metadata = {"render_models": ["human", "json", "ansi"]}
+    metadata = {"render_models": [None, "human", "json", "ansi"]}
 
     def __init__(self, render_mode: Optional[str] = None):
         super().__init__()
@@ -13,6 +13,10 @@ class OinkGameEnv(ABC, gym.Env):
 
         self.current_player_idx: int = 0
         self.num_players: int = 0
+        if render_mode not in self.metadata["render_models"]:
+            raise NotImplementedError(
+                f"render mode {self.render_mode} is not supported"
+            )
         self.render_mode: Optional[str] = render_mode
 
     @abstractmethod
@@ -99,8 +103,6 @@ class OinkGameEnv(ABC, gym.Env):
         return observation, {"global_state": global_state, "action_mask": action_mask}
 
     def render(self) -> Any | List[Any]:
-        if self.render_mode is None:
-            return
         if self.render_mode == "human":
             text = self._render_text()
             print(text)
@@ -109,4 +111,5 @@ class OinkGameEnv(ABC, gym.Env):
             return self._render_text()
         if self.render_mode == "json":
             return self._get_global_state()
-        raise NotImplementedError(f"render mode {self.render_mode} is not supported")
+        else:  # None
+            return
