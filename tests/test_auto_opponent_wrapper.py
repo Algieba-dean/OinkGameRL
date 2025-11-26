@@ -1,6 +1,5 @@
 import pytest
 import gymnasium as gym
-import numpy as np
 import random
 
 from games.AutoOpponentWrapper import AutoOpponentWrapper
@@ -8,13 +7,14 @@ from games.OinkGame import OinkGameEnv
 from games.GameAgent import GameAgent
 
 
-class MockBot(GameAgent):
-    def __init__(self):
-        self.call_count = 0
+@pytest.fixture
+def bot_factory(mocker):
+    def _create(return_value=1):
+        bot = mocker.Mock(spec=GameAgent)
+        bot.predict.return_value = return_value
+        return bot
 
-    def predict(self, observation, action_mask):
-        self.call_count += 1
-        return 1
+    return _create
 
 
 class ScriptedEnv(OinkGameEnv):
@@ -34,15 +34,20 @@ class ScriptedEnv(OinkGameEnv):
         self.action_space = gym.spaces.Discrete(2)
         self.observation_space = gym.spaces.Discrete(10)
         self.current_sequence_idx = 0
-        self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
+
+        if self.__player_sequence:
+            self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
+        else:
+            self._current_player_idx = 0
 
     def _apply_action(self, action):
-        if self.current_sequence_idx == len(self.__player_sequence):
+        if self.current_sequence_idx >= len(self.__player_sequence):
             return 0, True
         # do some action and get reward
         reward = self.__reward_sequence[self.current_sequence_idx]
-
         self.current_sequence_idx += 1
+
+        # game terminate condition
         if self.current_sequence_idx == len(self.__player_sequence):
             return reward, True
         self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
@@ -62,32 +67,36 @@ class ScriptedEnv(OinkGameEnv):
 
     def _reset_logic(self, seed=0, options=None):
         self.current_sequence_idx = 0
-        self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
+        if self.__player_sequence:
+            self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
 
 
 class TestAutoOppoentWrapperContract:
-    BOTS = {1: MockBot()}
     EGO_PLAYER_IDX = 0
     PLAYER_SEQUENCE = [0, 1]
 
-    @pytest.fixture
-    def wrapped_env(self):
-        return AutoOpponentWrapper(
+    def test_bots_property(self, bot_factory):
+        bots = {1: bot_factory()}
+        wrapped_env = AutoOpponentWrapper(
             env=ScriptedEnv(player_sequence=self.PLAYER_SEQUENCE),
-            bots=self.BOTS,
+            bots=bots,
             ego_player_idx=self.EGO_PLAYER_IDX,
         )
-
-    def test_bots_property(self, wrapped_env):
         assert isinstance(wrapped_env.bots, dict)
-        assert wrapped_env.bots is self.BOTS
+        assert wrapped_env.bots is bots
         with pytest.raises(
             AttributeError,
             match="property 'bots' of '.*' object has no setter",
         ):
-            wrapped_env.bots = {2: MockBot()}
+            wrapped_env.bots = {2: bot_factory()}
 
-    def test_ego_idx_property(self, wrapped_env):
+    def test_ego_idx_property(self):
+        bots = {}
+        wrapped_env = AutoOpponentWrapper(
+            env=ScriptedEnv(player_sequence=self.PLAYER_SEQUENCE),
+            bots=bots,
+            ego_player_idx=self.EGO_PLAYER_IDX,
+        )
         assert isinstance(wrapped_env.ego_player_idx, int)
         with pytest.raises(
             AttributeError,
@@ -98,8 +107,8 @@ class TestAutoOppoentWrapperContract:
 
 class TestAutoOpponentWrapperInUse:
 
-    def test_regular_step(self):
-        bot = MockBot()
+    def test_regular_step(self, bot_factory):
+        bot = bot_factory()
         bots = {
             1: bot,
         }
@@ -114,15 +123,15 @@ class TestAutoOpponentWrapperInUse:
         _, reward, terminated, _, _ = wrappered_env.step(action=1)
         assert reward == reward_sequence[1]
         assert not terminated
-        assert bot.call_count == 1
+        assert bot.predict.call_count == 1
 
         _, reward, terminated, _, _ = wrappered_env.step(action=1)
         assert reward == reward_sequence[2]
         assert terminated
-        assert bot.call_count == 1
+        assert bot.predict.call_count == 1
 
-    def test_regular_reset(self):
-        bot = MockBot()
+    def test_regular_reset(self, bot_factory):
+        bot = bot_factory()
         bots = {
             1: bot,
         }
@@ -137,8 +146,8 @@ class TestAutoOpponentWrapperInUse:
         _, _, terminated, _, _ = wrappered_env.step(action=1)
         assert not terminated
 
-    def test_opponent_starts_game(self):
-        bot = MockBot()
+    def test_opponent_starts_game(self, bot_factory):
+        bot = bot_factory()
         bots = {
             1: bot,
         }
@@ -148,11 +157,11 @@ class TestAutoOpponentWrapperInUse:
         _, _, terminated, _, _ = wrappered_env.step(action=1)
         assert terminated
         assert env.current_player_idx == 0
-        assert bot.call_count == 1
+        assert bot.predict.call_count == 1
 
-    def test_opponent_starts_win(self):
+    def test_opponent_starts_win(self, bot_factory):
         # no exception raised and no death loop should be here
-        bot = MockBot()
+        bot = bot_factory()
         bots = {
             1: bot,
         }
@@ -162,8 +171,8 @@ class TestAutoOpponentWrapperInUse:
         _, _, terminated, _, _ = wrappered_env.step(action=1)
         assert terminated
 
-    def test_ego_idx(self):
-        bot = MockBot()
+    def test_ego_idx(self, bot_factory):
+        bot = bot_factory()
         bots = {
             0: bot,
         }
@@ -178,115 +187,112 @@ class TestAutoOpponentWrapperInUse:
         _, reward, terminated, _, _ = wrappered_env.step(action=1)
         assert reward == reward_sequence[-1]
         assert terminated
-        assert bot.call_count == 2
+        assert bot.predict.call_count == 2
 
     test_bots_params = [
-        {"id": "empty bots", "bots": {}, "exception": ""},
+        {"id": "empty bots", "bots_idx": [], "exception": ""},
         {
             "id": "non-consecutive bots idx",
-            "bots": {1: MockBot(), 5: MockBot()},
+            "bots_idx": [1, 5],
         },
         {
             "id": "shuffled bots idx",
-            "bots": {i: MockBot() for i in random.sample(list(range(5)), 5) if i != 0},
+            "bots_idx": [i for i in random.sample(list(range(5)), 5) if i != 0],
         },
         {
             "id": "multibots idx",
-            "bots": {i: MockBot() for i in range(5000) if i != 0},
+            "bots_idx": list(range(1, 5000)),
         },
     ]
 
-    @pytest.mark.parametrize(
-        "case", test_bots_params, ids=[case["id"] for case in test_bots_params]
-    )
-    def test_bots_success(self, case):
-        player_sequence = (
-            list(case["bots"].keys()) if len(case["bots"].keys()) > 0 else [0]
-        )
+    @pytest.mark.parametrize("case", test_bots_params, ids=lambda case: case["id"])
+    def test_bots_success(self, case, bot_factory):
+        bots = {idx: bot_factory() for idx in case["bots_idx"]}
+        player_sequence = list(bots.keys()) if len(bots.keys()) > 0 else [0]
+
         env = ScriptedEnv(player_sequence=player_sequence)
-        AutoOpponentWrapper(env=env, bots=case["bots"], ego_player_idx=0)
+        AutoOpponentWrapper(env=env, bots=bots, ego_player_idx=0)
         # no assertion, if no error should be fine
 
-    def test_ego_idx_occupied(self):
+    def test_ego_idx_occupied(self, bot_factory):
         env = ScriptedEnv(player_sequence=[0, 1])
         with pytest.raises(
             ValueError, match="ego player idx is occupied by bots idx.*"
         ):
-            AutoOpponentWrapper(env=env, bots={0: MockBot()}, ego_player_idx=0)
+            AutoOpponentWrapper(env=env, bots={0: bot_factory()}, ego_player_idx=0)
 
     test_players_params = [
         {
             "id": "ego turns",
             "player_sequence": [0, 0, 0, 0],
-            "bots": {1: MockBot()},
+            "bots_idx": [1],
             "reward_sequence": [1, 2, 3, 4],
         },
         {
             "id": "long ego turns",
             "player_sequence": [0 for _ in range(5000)],
-            "bots": {1: MockBot()},
+            "bots_idx": [1],
             "reward_sequence": [i**2 for i in range(5000)],
         },
         {
             "id": "2 players turns",
             "player_sequence": [0, 1],
-            "bots": {1: MockBot()},
+            "bots_idx": [1],
             "reward_sequence": [1, 2],
         },
         {
             "id": "long 2 players turns",
             "player_sequence": [i % 2 for i in range(5000)],
-            "bots": {1: MockBot()},
+            "bots_idx": [1],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "long 2 players turns random",
             "player_sequence": [random.randint(0, 1) for i in range(5000)],
-            "bots": {1: MockBot()},
+            "bots_idx": [1],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "3 players",
             "player_sequence": [i % 3 for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot()},
+            "bots_idx": [1, 2],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "long 3 players",
             "player_sequence": [i % 3 for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot()},
+            "bots_idx": [1, 2],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "long 3 players random",
             "player_sequence": [random.randint(0, 2) for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot()},
+            "bots_idx": [1, 2],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "4 players",
             "player_sequence": [i % 4 for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot(), 3: MockBot()},
+            "bots_idx": [1, 2, 3],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "long 4 players",
             "player_sequence": [i % 4 for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot(), 3: MockBot()},
+            "bots_idx": [1, 2, 3],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
         {
             "id": "long 4 players random",
             "player_sequence": [random.randint(0, 3) for i in range(5000)],
-            "bots": {1: MockBot(), 2: MockBot(), 3: MockBot()},
+            "bots_idx": [1, 2, 3],
             "reward_sequence": [i * 2 for i in range(5000)],
         },
     ]
 
-    @pytest.mark.parametrize(
-        "case", test_players_params, ids=[param["id"] for param in test_players_params]
-    )
-    def test_players_play(self, case):
+    @pytest.mark.parametrize("case", test_players_params, ids=lambda case: case["id"])
+    def test_players_play(self, case, bot_factory):
+        bots = {idx: bot_factory() for idx in case["bots_idx"]}
         expected_ego_movement_counts = case["player_sequence"].count(0)
         expected_ego_rewards = [
             reward
@@ -297,7 +303,7 @@ class TestAutoOpponentWrapperInUse:
         ]
 
         expected_bot_movement_counts_dict = {}
-        for bot_idx in case["bots"]:
+        for bot_idx in bots:
             expected_bot_movement_counts_dict[bot_idx] = case["player_sequence"].count(
                 bot_idx
             )
@@ -305,7 +311,7 @@ class TestAutoOpponentWrapperInUse:
             player_sequence=case["player_sequence"],
             reward_sequence=case["reward_sequence"],
         )
-        wrappered_env = AutoOpponentWrapper(env=env, bots=case["bots"])
+        wrappered_env = AutoOpponentWrapper(env=env, bots=bots)
         wrappered_env.reset()
 
         # move
@@ -322,11 +328,11 @@ class TestAutoOpponentWrapperInUse:
 
             assert reward == expected_ego_rewards[i]
 
-        for bot_idx, bot in case["bots"].items():
-            assert bot.call_count == expected_bot_movement_counts_dict[bot_idx]
+        for bot_idx, bot in bots.items():
+            assert bot.predict.call_count == expected_bot_movement_counts_dict[bot_idx]
 
-    def test_ego_turn_only(self):
-        bot = MockBot()
+    def test_ego_turn_only(self, bot_factory):
+        bot = bot_factory()
         bots = {
             1: bot,
         }
@@ -346,4 +352,4 @@ class TestAutoOpponentWrapperInUse:
             else:
                 assert not terminated
             assert env.current_player_idx == player_idx
-            assert bot.call_count == 0
+            assert bot.predict.call_count == 0
