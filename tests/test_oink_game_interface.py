@@ -19,7 +19,6 @@ class DummyOinkGameEnv(OinkGameEnv):
         super().__init__(render_mode=render_mode)
         self.observation_space = gym.spaces.Discrete(10)
         self.action_space = gym.spaces.Discrete(2)
-        self.reset_called_count = 0
 
     def _apply_action(self, action):
         return self.REWARD, self.TERMINATED
@@ -34,7 +33,6 @@ class DummyOinkGameEnv(OinkGameEnv):
         return self.OBSERVATION
 
     def _reset_logic(self, seed, options):
-        self.reset_called_count += 1
         return None
 
     def _render_text(self):
