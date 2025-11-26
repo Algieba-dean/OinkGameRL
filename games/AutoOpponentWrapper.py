@@ -13,7 +13,7 @@ class AutoOpponentWrapper(gym.Wrapper):
         self, env: OinkGameEnv, bots: Dict[int, GameAgent], ego_player_idx: int = 0
     ):
         super().__init__(env)
-        self.bots: List[GameAgent] = bots
+        self.bots: Dict[int, GameAgent] = bots
         self.ego_player_idx: int = (
             ego_player_idx  # TODO might need a setter, and set as property
         )
