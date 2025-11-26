@@ -61,14 +61,16 @@ class TestGymContract:
         assert isinstance(env.observation_space, gym.Space)
         assert isinstance(env.action_space, gym.Space)
 
-    def test_current_player_idx_immutable(self, env):
+    def test_current_player_idx_property(self, env):
+        assert isinstance(env.current_player_idx, int)
         with pytest.raises(
             AttributeError,
             match="property 'current_player_idx' of '.*' object has no setter",
         ):
             env.current_player_idx = 1
 
-    def test_num_players_immutable(self, env):
+    def test_num_players_property(self, env):
+        assert isinstance(env.num_players, int)
         with pytest.raises(
             AttributeError, match="property 'num_players' of '.*' object has no setter"
         ):
