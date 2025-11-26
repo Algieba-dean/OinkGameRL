@@ -120,7 +120,7 @@ class TestEnvInAgentUsage:
         with pytest.raises(
             NotImplementedError, match="render mode .* is not supported"
         ):
-            env = DummyOinkGameEnv(render_mode="dummy_invalid_mode")
+            DummyOinkGameEnv(render_mode="dummy_invalid_mode")
 
     def test_invalid_render_on_render(self):
         with pytest.raises(
@@ -211,11 +211,5 @@ class TestOinkGameEnvInteraction:
         env.reset()
 
         _, reward, terminated, _, _ = env.step(1)
-        assert reward == mock_reward
+        assert np.isclose(reward, mock_reward, rtol=1e-09, atol=1e-09)
         assert terminated == mock_terminated
-
-    # TODO
-    # 1. test if the _get_observation,_get_global_state, _get_action_mask works, as we might need them in wrapper
-    # 2. test if reset, step, render works
-    # 2.1 for step, should check if all returns are back to according player idx, and format
-    ...
