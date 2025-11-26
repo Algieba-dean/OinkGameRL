@@ -34,7 +34,7 @@ class ScriptedEnv(OinkGameEnv):
         self.action_space = gym.spaces.Discrete(2)
         self.observation_space = gym.spaces.Discrete(10)
         self.current_sequence_idx = 0
-        self.current_player_idx = self.__player_sequence[self.current_sequence_idx]
+        self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
 
     def _apply_action(self, action):
         if self.current_sequence_idx == len(self.__player_sequence):
@@ -45,7 +45,7 @@ class ScriptedEnv(OinkGameEnv):
         self.current_sequence_idx += 1
         if self.current_sequence_idx == len(self.__player_sequence):
             return reward, True
-        self.current_player_idx = self.__player_sequence[self.current_sequence_idx]
+        self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
         return reward, False
 
     def _get_action_mask(self, player_idx):
@@ -62,7 +62,7 @@ class ScriptedEnv(OinkGameEnv):
 
     def _reset_logic(self, seed=0, options=None):
         self.current_sequence_idx = 0
-        self.current_player_idx = self.__player_sequence[self.current_sequence_idx]
+        self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
 
 
 class TestAutoOpponentWrapper:
@@ -250,12 +250,6 @@ class TestAutoOpponentWrapper:
             "bots": {1: MockBot(), 2: MockBot(), 3: MockBot()},
             "reward_sequence": [i * 2 for i in range(5000)],
         },
-        # {
-        #     "id": "",
-        #     "player_sequence": [],
-        #     "bots": {1: MockBot()},
-        #     "reward_sequence": [],
-        # },
     ]
 
     @pytest.mark.parametrize(

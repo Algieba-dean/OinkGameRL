@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple, Any, TYPE_CHECKING
+from typing import Dict, Tuple, Any, TYPE_CHECKING, List
 import gymnasium as gym
 
 
@@ -13,9 +13,9 @@ class AutoOpponentWrapper(gym.Wrapper):
         self, env: OinkGameEnv, bots: Dict[int, GameAgent], ego_player_idx: int = 0
     ):
         super().__init__(env)
-        self.bots = bots
-        self.ego_player_idx = ego_player_idx
-        if self.ego_player_idx in self.bots.keys():
+        self.bots: List[GameAgent]= bots
+        self.ego_player_idx:int = ego_player_idx # TODO might need a setter, and set as property
+        if self.ego_player_idx in self.bots:
             raise ValueError(
                 f"ego player idx is occupied by bots idx, ego:{self.ego_player_idx}, bot:{self.bots.keys()}"
             )
@@ -53,7 +53,7 @@ class AutoOpponentWrapper(gym.Wrapper):
             )
         return observation, reward, terminated, terminated, info
 
-    def reset(self, **kwargs):
+    def reset(self, **kwargs) -> Tuple[Any, Dict[str, Any]]:
         observation, info = self.env.reset(**kwargs)
         terminated = False
         truncated = False
@@ -74,7 +74,7 @@ class AutoOpponentWrapper(gym.Wrapper):
             )
         return observation, info
 
-    def step(self, action: Any):
+    def step(self, action: Any)-> Tuple[Any, float, bool, bool, Dict[str, Any]]:
 
         # the step is now only for ego player movement
         observation, reward, terminated, truncated, info = self.env.step(action=action)

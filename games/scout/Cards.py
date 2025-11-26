@@ -3,9 +3,9 @@ from typing import List, Self
 
 class Card:
     def __init__(self, top: int, bottom: int, supported_players: List[int]):
-        self.__top = top
-        self.__bottom = bottom
-        self.__supported_players = supported_players
+        self.__top:int = top
+        self.__bottom:int = bottom
+        self.__supported_players:int = supported_players
 
     @property
     def top(self):
