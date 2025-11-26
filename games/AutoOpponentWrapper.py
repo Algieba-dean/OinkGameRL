@@ -13,14 +13,20 @@ class AutoOpponentWrapper(gym.Wrapper):
         self, env: OinkGameEnv, bots: Dict[int, GameAgent], ego_player_idx: int = 0
     ):
         super().__init__(env)
-        self.bots: Dict[int, GameAgent] = bots
-        self.ego_player_idx: int = (
-            ego_player_idx  # TODO might need a setter, and set as property
-        )
-        if self.ego_player_idx in self.bots:
+        self.__bots: Dict[int, GameAgent] = bots
+        self.__ego_player_idx: int = ego_player_idx
+        if self.__ego_player_idx in self.__bots:
             raise ValueError(
-                f"ego player idx is occupied by bots idx, ego:{self.ego_player_idx}, bot:{self.bots.keys()}"
+                f"ego player idx is occupied by bots idx, ego:{self.__ego_player_idx}, bot:{self.__bots.keys()}"
             )
+
+    @property
+    def ego_player_idx(self) -> int:
+        return self.__ego_player_idx
+
+    @property
+    def bots(self) -> Dict[int, GameAgent]:
+        return self.__bots
 
     def reset(self, **kwargs) -> Tuple[Any, Dict[str, Any]]:
         observation, info = self.env.reset(**kwargs)

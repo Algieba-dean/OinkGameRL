@@ -65,7 +65,38 @@ class ScriptedEnv(OinkGameEnv):
         self._current_player_idx = self.__player_sequence[self.current_sequence_idx]
 
 
-class TestAutoOpponentWrapper:
+class TestAutoOppoentWrapperContract:
+    BOTS = {1: MockBot()}
+    EGO_PLAYER_IDX = 0
+    PLAYER_SEQUENCE = [0, 1]
+
+    @pytest.fixture
+    def wrapped_env(self):
+        return AutoOpponentWrapper(
+            env=ScriptedEnv(player_sequence=self.PLAYER_SEQUENCE),
+            bots=self.BOTS,
+            ego_player_idx=self.EGO_PLAYER_IDX,
+        )
+
+    def test_bots_property(self, wrapped_env):
+        assert isinstance(wrapped_env.bots, dict)
+        assert wrapped_env.bots is self.BOTS
+        with pytest.raises(
+            AttributeError,
+            match="property 'bots' of '.*' object has no setter",
+        ):
+            wrapped_env.bots = {2: MockBot()}
+
+    def test_ego_idx_property(self, wrapped_env):
+        assert isinstance(wrapped_env.ego_player_idx, int)
+        with pytest.raises(
+            AttributeError,
+            match="property 'ego_player_idx' of '.*' object has no setter",
+        ):
+            wrapped_env.ego_player_idx = 3
+
+
+class TestAutoOpponentWrapperInUse:
 
     def test_regular_step(self):
         bot = MockBot()
