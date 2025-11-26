@@ -26,7 +26,7 @@ class ScriptedEnv(OinkGameEnv):
     ):
         super().__init__(render_mode)
         self.__player_sequence = player_sequence
-        self.__reward_sequnce = (
+        self.__reward_sequence = (
             reward_sequence
             if reward_sequence is not None
             else [1 for _ in self.__player_sequence]
@@ -40,7 +40,7 @@ class ScriptedEnv(OinkGameEnv):
         if self.current_sequence_idx == len(self.__player_sequence):
             return 0, True
         # do some action and get reward
-        reward = self.__reward_sequnce[self.current_sequence_idx]
+        reward = self.__reward_sequence[self.current_sequence_idx]
 
         self.current_sequence_idx += 1
         if self.current_sequence_idx == len(self.__player_sequence):
