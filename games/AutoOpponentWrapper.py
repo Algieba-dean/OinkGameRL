@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple, Any, TYPE_CHECKING, List
+from typing import Dict, Tuple, Any, TYPE_CHECKING
 import gymnasium as gym
 
 
