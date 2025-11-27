@@ -1,6 +1,6 @@
+import pytest
+
 from games.GameAgent import GameAgent
-import pytest
-import pytest
 
 
 class TestGameAgentContract:
@@ -23,7 +23,6 @@ class TestGameAgentContract:
 
 class TestGameAgent:
     def test_concrete_agent_works_correctly(self):
-
         class DummyAgent(GameAgent):
             def predict(self, observation, action_mask):
                 if not action_mask:

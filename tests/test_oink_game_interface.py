@@ -1,7 +1,8 @@
-import pytest
-import numpy as np
-import gymnasium as gym
 from typing import SupportsFloat
+
+import gymnasium as gym
+import numpy as np
+import pytest
 from gymnasium.utils.env_checker import check_env
 
 from games.OinkGame import OinkGameEnv
@@ -92,7 +93,7 @@ class TestGymContract:
         assert isinstance(step_result, tuple)
         assert len(step_result) == 5
         _, reward, terminated, truncated, info = step_result
-        assert isinstance(reward, (float, int, np.number, SupportsFloat))
+        assert isinstance(reward, (float | int | np.number | SupportsFloat))
         assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
 
@@ -123,13 +124,12 @@ class TestEnvInAgentUsage:
             DummyOinkGameEnv(render_mode="dummy_invalid_mode")
 
     def test_invalid_render_on_render(self):
+        env = DummyOinkGameEnv()
+        env.reset()
+        env.render_mode = "dummy_invalid_mode"
         with pytest.raises(
             NotImplementedError, match="render mode .* is not supported"
         ):
-
-            env = DummyOinkGameEnv()
-            env.reset()
-            env.render_mode = "dummy_invalid_mode"
             env.render()
 
     def test_step(self):

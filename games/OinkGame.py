@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Dict, Tuple
+from typing import Any
+
 import gymnasium as gym
 
 
 class OinkGameEnv(ABC, gym.Env):
     metadata = {"render_models": [None, "human", "json", "ansi"]}
 
-    def __init__(self, render_mode: Optional[str] = None):
+    def __init__(self, render_mode: str | None = None):
         super().__init__()
         self.observation_space: gym.Space = None
         self.action_space: gym.Space = None
@@ -17,7 +18,7 @@ class OinkGameEnv(ABC, gym.Env):
             raise NotImplementedError(
                 f"render mode {self.render_mode} is not supported"
             )
-        self.render_mode: Optional[str] = render_mode
+        self.render_mode: str | None = render_mode
 
     @property
     def current_player_idx(self) -> int:
@@ -27,7 +28,7 @@ class OinkGameEnv(ABC, gym.Env):
     def num_players(self) -> int:
         return self._num_players
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+    def step(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """apply action for current player idx
 
         Args:
@@ -50,8 +51,8 @@ class OinkGameEnv(ABC, gym.Env):
         return observation, reward, terminated, truncated, info
 
     def reset(
-        self, seed: int | None = None, options: Dict[str, Any] | None = None
-    ) -> Tuple[Any, Dict[str, Any]]:
+        self, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[Any, dict[str, Any]]:
         super().reset(seed=seed, options=options)
         self._reset_logic(seed=seed, options=options)
         observation = self._get_observation(player_idx=self.current_player_idx)
@@ -60,7 +61,7 @@ class OinkGameEnv(ABC, gym.Env):
 
         return observation, {"global_state": global_state, "action_mask": action_mask}
 
-    def render(self) -> Any | List[Any]:
+    def render(self) -> Any | list[Any]:
         if self.render_mode is None:
             return
         if self.render_mode == "human":
@@ -79,15 +80,15 @@ class OinkGameEnv(ABC, gym.Env):
         raise NotImplementedError
 
     @abstractmethod
-    def _get_global_state(self) -> Dict[Any, Any]:
+    def _get_global_state(self) -> dict[Any, Any]:
         raise NotImplementedError
 
     @abstractmethod
-    def _get_action_mask(self, player_idx: int) -> List[int]:
+    def _get_action_mask(self, player_idx: int) -> list[int]:
         raise NotImplementedError
 
     @abstractmethod
-    def _apply_action(self, action: Any) -> Tuple[float, bool]:
+    def _apply_action(self, action: Any) -> tuple[float, bool]:
         """handle the game logic
         1. update the game states
         2. switch current player idx
@@ -105,7 +106,7 @@ class OinkGameEnv(ABC, gym.Env):
         raise NotImplementedError
 
     @abstractmethod
-    def _reset_logic(self, seed: int, options: Optional[Dict[str, Any]]) -> None:
+    def _reset_logic(self, seed: int, options: dict[str, Any] | None) -> None:
         """real reset logic, for initial card set, reset score, orgnize cards
 
         Args:

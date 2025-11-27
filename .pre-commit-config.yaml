@@ -1,0 +1,78 @@
+# .pre-commit-config.yaml
+
+# Global exclusion:
+# Ignore git internal files, virtual environments, lock files, and binary assets.
+exclude: '^(\.git|\.venv|uv\.lock|.*\.svg|.*\.png)'
+
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  # ------------------------------------------------------------------
+  # 1. Standard Pre-commit Hooks (Basics & Safety)
+  # ------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Whitespace and formatting
+      - id: trailing-whitespace # Trims trailing whitespace.
+      - id: end-of-file-fixer # Ensures files end with a newline.
+
+      # File validity checks
+      - id: check-yaml # Checks YAML syntax.
+      - id: check-toml # Checks TOML syntax.
+      - id: check-json # Checks JSON syntax.
+      - id: check-added-large-files # Prevents committing giant files (default > 500KB).
+      - id: check-case-conflict # Prevents filename casing issues (Windows/macOS compatibility).
+      - id: check-merge-conflict # Prevents committing files with unresolved merge conflict markers.
+
+      # Security Basics
+      - id: detect-private-key # Detects the presence of private keys.
+      - id: debug-statements # Prevents committing breakpoint() or pdb.set_trace().
+
+  # ------------------------------------------------------------------
+  # 2. Workflow Safety (Branch Protection)
+  # ------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: no-commit-to-branch
+        args: ["--branch", "main", "--branch", "master"]
+        # Protects 'main'/'master' from direct commits.
+        # Forces you to create a feature branch and use Pull Requests.
+
+  # ------------------------------------------------------------------
+  # 3. Ruff: The All-in-One Python Tool (Lint + Format + Imports)
+  # ------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ensure this version matches your pyproject.toml / development env
+    rev: v0.8.0
+    hooks:
+      # Run the Linter (Fixes bugs, sorts imports, upgrades syntax)
+      - id: ruff
+        args: [--fix]
+      # Run the Formatter (Black-compatible formatting)
+      - id: ruff-format
+
+  # ------------------------------------------------------------------
+  # 4. Advanced Security: Detect Secrets
+  # ------------------------------------------------------------------
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        # Scans for high-entropy strings (passwords, API keys).
+        # To set up: run `detect-secrets scan > .secrets.baseline` first.
+        exclude: uv.lock
+
+  # ------------------------------------------------------------------
+  # 5. (Optional) Static Type Checking
+  # Note: Mypy in pre-commit can be slow or flaky if envs aren't synced.
+  # Many teams prefer running this in CI only.
+  # ------------------------------------------------------------------
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.13.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies: [] # Add missing type stubs here if needed
