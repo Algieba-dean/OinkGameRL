@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Tuple, Any, TYPE_CHECKING
-import gymnasium as gym
 
+from typing import TYPE_CHECKING, Any
+
+import gymnasium as gym
 
 if TYPE_CHECKING:  # pragma: no cover
     from GameAgent import GameAgent
@@ -10,10 +11,10 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class AutoOpponentWrapper(gym.Wrapper):
     def __init__(
-        self, env: OinkGameEnv, bots: Dict[int, GameAgent], ego_player_idx: int = 0
+        self, env: OinkGameEnv, bots: dict[int, GameAgent], ego_player_idx: int = 0
     ):
         super().__init__(env)
-        self.__bots: Dict[int, GameAgent] = bots
+        self.__bots: dict[int, GameAgent] = bots
         self.__ego_player_idx: int = ego_player_idx
         if self.__ego_player_idx in self.__bots:
             raise ValueError(
@@ -25,10 +26,10 @@ class AutoOpponentWrapper(gym.Wrapper):
         return self.__ego_player_idx
 
     @property
-    def bots(self) -> Dict[int, GameAgent]:
+    def bots(self) -> dict[int, GameAgent]:
         return self.__bots
 
-    def reset(self, **kwargs) -> Tuple[Any, Dict[str, Any]]:
+    def reset(self, **kwargs) -> tuple[Any, dict[str, Any]]:
         observation, info = self.env.reset(**kwargs)
         terminated = False
         truncated = False
@@ -49,8 +50,7 @@ class AutoOpponentWrapper(gym.Wrapper):
             )
         return observation, info
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
-
+    def step(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         # the step is now only for ego player movement
         observation, reward, terminated, truncated, info = self.env.step(action=action)
 
@@ -75,8 +75,8 @@ class AutoOpponentWrapper(gym.Wrapper):
         previous_observation: Any,
         terminated: bool,
         truncated: bool,
-        previous_info: Dict[str, Any],
-    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+        previous_info: dict[str, Any],
+    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         observation = previous_observation
         info = previous_info
         while self.__need_process_opponent_turns(

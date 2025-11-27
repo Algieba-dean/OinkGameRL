@@ -3,19 +3,21 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
+    branches: ["master"]
   pull_request:
-    branches:
-      - master
+    branches: ["master"]
   schedule:
     - cron: "0 0 * * *"
 
-jobs:
-  tests:
-    name: Run Pytest and Coverage
-    runs-on: ubuntu-latest
+# 1. Save resources: Automatically cancel old CI runs on new commits
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+  quality:
+    name: Code Quality & Safety
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,19 +34,73 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        # 确保安装了 pytest-cov 等所有 dev 依赖
+        # Ensure pre-commit package is installed via dev dependencies
+        run: uv sync --all-extras --dev
+
+      # -------------------------------------------------------
+      # Critical Step: Cache Pre-commit environment
+      # Pre-commit needs to install environments (like downloading ruff) on the first run.
+      # Without caching, CI will be very slow.
+      # -------------------------------------------------------
+      - name: Cache pre-commit hooks
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      # -------------------------------------------------------
+      # Critical Step: Run Pre-commit
+      # SKIP=no-commit-to-branch: Skip branch checks in CI,
+      # because CI is often in a detached HEAD state, and branch protection
+      # should be handled by GitHub repository settings.
+      # -------------------------------------------------------
+      - name: Run pre-commit
+        run: |
+          uv run pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: no-commit-to-branch
+
+  tests:
+    name: Test (Py${{ matrix.python-version }} on ${{ matrix.os }})
+    needs: quality # Run tests only after code quality checks pass
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3. Matrix Testing: Ensure compatibility across OS and Python versions
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
         run: uv sync --all-extras --dev
 
       - name: Run pytest
-        # 注意：这里去掉了 'tests' 参数，因为 pyproject.toml 里已经配置了 testpaths = ["tests"]
-        # uv run pytest 会自动读取 addopts 中的 --cov 参数并生成报告
-        run: uv run pytest
+        # 4. Generate Coverage Reports (XML & HTML)
+        run: uv run pytest --cov --cov-report=xml --cov-report=html
 
+      # 5. Upload Coverage HTML Report
       - name: Upload Coverage HTML Report
         uses: actions/upload-artifact@v4
-        # 使用 if: always() 确保即使测试挂了（比如断言失败），你依然能拿到覆盖率报告来分析原因
         if: always()
         with:
-          name: coverage-html
+          # Add matrix name to prevent overwriting artifacts from different jobs
+          name: coverage-html-${{ matrix.os }}-py${{ matrix.python-version }}
           path: htmlcov/
           retention-days: 7

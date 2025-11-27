@@ -1,19 +1,19 @@
-import pytest
-import gymnasium as gym
 import random
-from typing import List, Dict, Tuple, Any
+from typing import Any
+
+import gymnasium as gym
+import pytest
 
 from games.AutoOpponentWrapper import AutoOpponentWrapper
-from games.OinkGame import OinkGameEnv
 from games.GameAgent import GameAgent
+from games.OinkGame import OinkGameEnv
 
 
 class ScriptedEnv(OinkGameEnv):
-
     def __init__(
         self,
-        player_sequence: List[int],
-        reward_sequence: List[int] = None,
+        player_sequence: list[int],
+        reward_sequence: list[int] = None,
         render_mode=None,
     ):
         super().__init__(render_mode)
@@ -88,12 +88,11 @@ def game_builder(bot_factory):
     """
 
     def _build(
-        player_seq: List[int],
-        reward_seq: List[int] = None,
-        bot_indices: List[int] = None,
+        player_seq: list[int],
+        reward_seq: list[int] = None,
+        bot_indices: list[int] = None,
         ego_idx: int = 0,
-    ) -> Tuple[AutoOpponentWrapper, ScriptedEnv, Dict[int, Any]]:
-
+    ) -> tuple[AutoOpponentWrapper, ScriptedEnv, dict[int, Any]]:
         # 1. Create Bots
         if bot_indices is None:
             bot_indices = []
@@ -264,7 +263,9 @@ class TestWrapperGameplay:
         # Expected move counts and rewards for Ego (Player 0)
         expected_moves = seq.count(0)
         expected_rewards = [
-            reward for idx, reward in zip(seq, case["rewards"]) if idx == 0
+            reward
+            for idx, reward in zip(seq, case["rewards"], strict=False)
+            if idx == 0
         ]
 
         for i in range(expected_moves):

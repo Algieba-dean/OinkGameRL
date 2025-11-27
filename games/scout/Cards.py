@@ -1,11 +1,11 @@
-from typing import List, Self
+from typing import Self
 
 
 class Card:
-    def __init__(self, top: int, bottom: int, supported_players: List[int]):
+    def __init__(self, top: int, bottom: int, supported_players: list[int]):
         self.__top: int = top
         self.__bottom: int = bottom
-        self.__supported_players: List[int] = supported_players
+        self.__supported_players: list[int] = supported_players
 
     def __str__(self):
         return f"[{self.top}]/{self.bottom}"
