@@ -7,10 +7,12 @@ import gymnasium as gym
 class OinkGameEnv(ABC, gym.Env):
     metadata = {"render_models": [None, "human", "json", "ansi"]}
 
+    # by pass the MyPy check and force subclass to implemente it. As it's just a hint for type, won't move it to __init__
+    observation_space: gym.Space
+    action_space: gym.Space
+
     def __init__(self, render_mode: str | None = None):
         super().__init__()
-        self.observation_space: gym.Space = None
-        self.action_space: gym.Space = None
 
         self._current_player_idx: int = 0
         self._num_players: int = 0
@@ -63,7 +65,7 @@ class OinkGameEnv(ABC, gym.Env):
 
     def render(self) -> Any | list[Any]:
         if self.render_mode is None:
-            return
+            return None
         if self.render_mode == "human":
             text = self._render_text()
             print(text)
@@ -106,7 +108,7 @@ class OinkGameEnv(ABC, gym.Env):
         raise NotImplementedError
 
     @abstractmethod
-    def _reset_logic(self, seed: int, options: dict[str, Any] | None) -> None:
+    def _reset_logic(self, seed: int | None, options: dict[str, Any] | None) -> None:
         """real reset logic, for initial card set, reset score, orgnize cards
 
         Args:

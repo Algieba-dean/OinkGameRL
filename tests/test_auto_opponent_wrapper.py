@@ -13,8 +13,8 @@ class ScriptedEnv(OinkGameEnv):
     def __init__(
         self,
         player_sequence: list[int],
-        reward_sequence: list[int] = None,
-        render_mode=None,
+        reward_sequence: list[int] | None = None,
+        render_mode: str | None = None,
     ):
         super().__init__(render_mode)
         self._player_seq = player_sequence
@@ -89,8 +89,8 @@ def game_builder(bot_factory):
 
     def _build(
         player_seq: list[int],
-        reward_seq: list[int] = None,
-        bot_indices: list[int] = None,
+        reward_seq: list[int] | None = None,
+        bot_indices: list[int] | None = None,
         ego_idx: int = 0,
     ) -> tuple[AutoOpponentWrapper, ScriptedEnv, dict[int, Any]]:
         # 1. Create Bots
@@ -140,6 +140,11 @@ def gen_gameplay_cases():
 
 class TestWrapperContract:
     """Tests basic contracts like properties and type checks."""
+
+    def test_unwappered_env_is_oink_game_env(self, game_builder):
+        wrapper, _, _ = game_builder(player_seq=[0, 1], bot_indices=[1])
+        # as for AutoOpponentWrapper the env should be OinkGameEnv
+        assert isinstance(wrapper.env.unwrapped, OinkGameEnv)
 
     def test_property_immutability(self, game_builder):
         # Use builder to quickly create a minimal viable environment
