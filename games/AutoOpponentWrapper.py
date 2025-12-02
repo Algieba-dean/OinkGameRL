@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import gymnasium as gym
 
 if TYPE_CHECKING:  # pragma: no cover
-    from GameAgent import GameAgent
-    from OinkGame import OinkGameEnv
+    from games.GameAgent import GameAgent
+    from games.OinkGame import OinkGameEnv
 
 
 class AutoOpponentWrapper(gym.Wrapper):
+    env: OinkGameEnv  # just use to pass MyPy check
+
     def __init__(
         self, env: OinkGameEnv, bots: dict[int, GameAgent], ego_player_idx: int = 0
     ):
@@ -20,6 +22,17 @@ class AutoOpponentWrapper(gym.Wrapper):
             raise ValueError(
                 f"ego player idx is occupied by bots idx, ego:{self.__ego_player_idx}, bot:{self.__bots.keys()}"
             )
+
+    @property
+    def _unwrapped_env(self) -> OinkGameEnv:
+        """
+        a specific attribution to as for AutoOpponentWrapper, the env will be OinkGameEnv
+        """
+        from games.OinkGame import (
+            OinkGameEnv,
+        )  # we have to do such a lazy import to pass ruff check
+
+        return cast(OinkGameEnv, self.env.unwrapped)
 
     @property
     def ego_player_idx(self) -> int:
@@ -68,7 +81,7 @@ class AutoOpponentWrapper(gym.Wrapper):
                 previous_info=info,
             )
 
-        return observation, reward, terminated, truncated, info
+        return observation, float(reward), terminated, truncated, info
 
     def __process_opponent_turns(
         self,
@@ -87,15 +100,15 @@ class AutoOpponentWrapper(gym.Wrapper):
         ):
             current_player_idx = self.env.current_player_idx
             bot = self.bots[current_player_idx]
-            bot_observation = self.env.unwrapped._get_observation(current_player_idx)
-            bot_action_mask = self.env.unwrapped._get_action_mask(current_player_idx)
+            bot_observation = self._unwrapped_env._get_observation(current_player_idx)
+            bot_action_mask = self._unwrapped_env._get_action_mask(current_player_idx)
             bot_action = bot.predict(
                 observation=bot_observation, action_mask=bot_action_mask
             )
             observation, reward, terminated, truncated, info = self.env.step(
                 action=bot_action
             )
-        return observation, reward, terminated, terminated, info
+        return observation, float(reward), terminated, terminated, info
 
     @staticmethod
     def __need_process_opponent_turns(
