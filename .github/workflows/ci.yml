@@ -14,6 +14,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# -------------------------------------------------------------------
+# 2. Security: Limit GITHUB_TOKEN permissions (Industrial Practice)
+# "contents: read" is required for actions/checkout.
+# All other permissions are set to "none" by default when this block exists.
+# -------------------------------------------------------------------
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Code Quality & Safety
@@ -39,8 +47,6 @@ jobs:
 
       # -------------------------------------------------------
       # Critical Step: Cache Pre-commit environment
-      # Pre-commit needs to install environments (like downloading ruff) on the first run.
-      # Without caching, CI will be very slow.
       # -------------------------------------------------------
       - name: Cache pre-commit hooks
         uses: actions/cache@v4
@@ -52,9 +58,6 @@ jobs:
 
       # -------------------------------------------------------
       # Critical Step: Run Pre-commit
-      # SKIP=no-commit-to-branch: Skip branch checks in CI,
-      # because CI is often in a detached HEAD state, and branch protection
-      # should be handled by GitHub repository settings.
       # -------------------------------------------------------
       - name: Run pre-commit
         run: |
