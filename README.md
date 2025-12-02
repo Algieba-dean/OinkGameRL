@@ -30,8 +30,8 @@ powershell -c "irm [https://astral.sh/uv/install.ps1](https://astral.sh/uv/insta
 1. **Clone the repository**
 
    ```bash
-   git clone [https://github.com/your-username/OinkAllStar.git](https://github.com/your-username/OinkAllStar.git)
-   cd OinkAllStar
+   git clone [https://github.com/Algieba-dean/OinkGameRL.git](https://github.com/Algieba-dean/OinkGameRL.git)
+   cd OinkGameRL
    ```
 
 2. **Sync the environment**
@@ -133,7 +133,7 @@ We use `detect-secrets` to prevent committing API keys or passwords.
 ## Project Structure
 
 ```text
-OinkAllStar/
+OinkGameRL/
 ├── games/               # Source code for environments and agents
 ├── tests/               # Pytest test suite
 ├── .github/             # GitHub Actions CI configuration
