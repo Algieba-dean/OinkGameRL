@@ -1,6 +1,8 @@
+from functools import total_ordering
 from typing import Self
 
 
+@total_ordering
 class Card:
     def __init__(self, top: int, bottom: int, supported_players: list[int]):
         self.__top: int = top
@@ -12,6 +14,12 @@ class Card:
 
     def __repr__(self):
         return self.__str__()
+
+    def __lt__(self, value):
+        return self.top < value.top
+
+    def __eq__(self, value):
+        return self.top == value.top
 
     @property
     def top(self):
