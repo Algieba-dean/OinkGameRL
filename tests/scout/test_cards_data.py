@@ -26,14 +26,27 @@ class TestLoadCards:
         ):
             CardData(data_path=unexpected_format_file)
 
-    # def test_load_invalid_data(self, scout_test_data_dir):
-    #     invalid_data_file = scout_test_data_dir / "invalid_data.csv"
-    #     with pytest.raises(ValueError, match="invalid data file"):
-    #         CardData(data_path=invalid_data_file)
-    #     ...
+    @pytest.mark.parametrize(
+        argnames=("required_column"),
+        argvalues=CardData.REQUIRED_DATA_COLUMNS,
+        ids=lambda column: f"missing {column}",
+    )
+    def test_load_invalid_column_name(self, scout_test_data_dir, required_column):
+        invalid_data_file = scout_test_data_dir / "invalid_column_data.csv"
+        with pytest.raises(
+            ValueError,
+            match=f"missing .*{required_column}.* in *",
+        ):
+            CardData(data_path=invalid_data_file)
 
-    # def test_load_success(self, card_data_path):
-    #     CardData(data_path=card_data_path)
+    def test_load_invalid_data(self, scout_test_data_dir):
+        invalid_data_file = scout_test_data_dir / "invalid_supported_players.csv"
+        with pytest.raises(ValueError):
+            CardData(data_path=invalid_data_file)
+
+    def test_load_success(self, card_data_path):
+        card_data = CardData(data_path=card_data_path)
+        assert len(card_data.cards) == 45
 
 
 # class TestCardValidation:
