@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/Algieba-dean/OinkGameRL/actions/workflows/ci.yml/badge.svg)](https://github.com/Algieba-dean/OinkGameRL/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![codecov](https://codecov.io/gh/Algieba-dean/OinkGameRL/graph/badge.svg?token=YOUR_TOKEN_HERE)](https://codecov.io/gh/Algieba-dean/OinkGameRL)
+![GitHub last commit](https://img.shields.io/github/last-commit/Algieba-dean/OinkGameRL)
+![GitHub repo size](https://img.shields.io/github/repo-size/Algieba-dean/OinkGameRL)
 
 This project implements a game environment and AI agents using `gymnasium`. It follows modern Python engineering practices, utilizing **uv** for dependency management, **Ruff** for linting, and **Pre-commit** for workflow safety.
 
