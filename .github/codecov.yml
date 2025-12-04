@@ -1,0 +1,26 @@
+codecov:
+  require_ci_to_pass: yes # only when ci passed then do coverage calculation, in case of miss reporting
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false # even no change here, should also display comments
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...85" # above 85 is great, below 60 is terrible
+
+  status:
+    project:
+      default:
+        target: auto # coverage should not below previous one
+        threshold: 2%
+
+    patch:
+      default:
+        target: 100%
+
+ignore:
+  - "tests/**/*"
+  - "**/*.pyi"
+  - "**/__init__.py"
