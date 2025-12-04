@@ -101,10 +101,11 @@ jobs:
       # 5. Upload Coverage to Codev
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Algieba-dean/OinkGameRL
-          fail_ci_if_error: trued
+          fail_ci_if_error: true
 
       # 6. Upload Coverage HTML Report
       - name: Upload Coverage HTML Report
