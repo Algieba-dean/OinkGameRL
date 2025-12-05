@@ -4,9 +4,20 @@ from pathlib import Path
 import pytest
 
 from games.scout.CardData import CardData
+from games.scout.constants import CardConsts
 
 
-class TestCardDataContract: ...
+@pytest.fixture
+def card_data() -> CardData:
+    return CardData()
+
+
+class TestCardDataContract:
+    def test_cards_propetry(self, card_data):
+        with pytest.raises(
+            AttributeError, match="property 'cards' of '.*' object has no setter"
+        ):
+            card_data.cards = []
 
 
 class TestLoadCards:
@@ -44,14 +55,70 @@ class TestLoadCards:
         with pytest.raises(ValueError):
             CardData(data_path=invalid_data_file)
 
-    def test_load_success(self, card_data_path):
-        card_data = CardData(data_path=card_data_path)
-        assert len(card_data.cards) == 45
+    def test_load_success(self):
+        card_data = CardData()
+        assert len(card_data.cards) == CardConsts.TOTAL_CARD_NUMBER
 
 
-# class TestCardValidation:
-#     def test_validate_card_numbers(self): ...
-#     def test_validate_card_unique(self): ...
-#     def test_validate_card_supported_players(self): ...
-#
-#     ...
+class TestCardValidation:
+    @pytest.mark.parametrize(
+        argnames="player_num, expected_card_num",
+        argvalues=[
+            (2, 11 * 2 * 2),  # 2 players, 11 for each one, and cards for two rounds
+            (3, 12 * 3),  # 3 players, 12 for each
+            (4, 11 * 4),  # 4 players, 11 for each
+            (5, 9 * 5),  # 5 players, 9 for each
+        ],
+    )
+    def test_card_numbers(self, card_data, player_num, expected_card_num):
+        supported_cards = [
+            card for card in card_data.cards if player_num in card.supported_players
+        ]
+        assert len(supported_cards) == expected_card_num
+
+    @pytest.mark.parametrize(
+        argnames="player_num",
+        argvalues=[2, 4],
+    )
+    def test_forbidden_card_in_two_or_four_players(self, card_data, player_num):
+        # card with 9 and 10 together should not shown up when players is 2 or 4
+        supported_cards = [
+            card for card in card_data.cards if player_num in card.supported_players
+        ]
+        is_any_forbidden_card = False
+        for card in supported_cards:
+            if (card.top == 9 and card.bottom == 10) or (
+                card.top == 10 and card.top == 9
+            ):
+                is_any_forbidden_card = True
+                break
+
+        assert is_any_forbidden_card is False
+
+    def test_forbidden_card_in_three_players(self, card_data):
+        # card with 10 together should not shown up when players is 2 or 4
+        supported_cards = [
+            card for card in card_data.cards if 3 in card.supported_players
+        ]
+        is_any_forbidden_card = False
+        for card in supported_cards:
+            if card.top == 10 or card.bottom == 10:
+                is_any_forbidden_card = True
+                break
+        assert is_any_forbidden_card is False
+
+    def test_card_unique_top_bottom(self, card_data):
+        # top and bottom number should be difference on each card
+        is_any_identical_card = False
+        for card in card_data.cards:
+            if card.top == card.bottom:
+                is_any_identical_card = True
+                break
+        assert is_any_identical_card is False
+
+    def test_card_unique(self, card_data):
+        # should have no any identical card, where flip or not
+        keys = [tuple(sorted((card.top, card.bottom))) for card in card_data.cards]
+        assert len(set(keys)) == len(keys)
+
+    ...
