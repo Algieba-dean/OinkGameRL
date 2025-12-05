@@ -1,6 +1,6 @@
 import pytest
 
-from games.scout.card.Cards import Card
+from games.scout.card.cards import Card
 
 
 class TestCardContract:

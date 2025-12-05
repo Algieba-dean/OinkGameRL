@@ -1,6 +1,6 @@
 import pytest
 
-from games.GameAgent import GameAgent
+from games.game_agent import GameAgent
 
 
 class TestGameAgentContract:

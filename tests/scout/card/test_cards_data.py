@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from games.scout.card.CardData import CardData
-from games.scout.Constants import CardConsts
+from games.scout.card.card_data import CardData
+from games.scout.constants import CardConsts
 
 
 @pytest.fixture
