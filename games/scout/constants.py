@@ -9,4 +9,15 @@ class CardConsts:
 
 
 class PlayerConsts:
-    ALLOWED_PLAYER_NUM: list[int] = [2, 3, 4, 5]
+    ALLOWED_PLAYER_NUM: list[int] = [
+        2,
+        3,
+        4,
+        5,
+    ]
+    PLAYER_CARD_NUM: dict[int, int] = {
+        2: 11,
+        3: 12,
+        4: 11,
+        5: 9,
+    }
