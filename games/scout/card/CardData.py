@@ -14,6 +14,7 @@ class CardData:
         ".csv",
     ]
     REQUIRED_DATA_COLUMNS: list[str] = [
+        CardConsts.IDX,
         CardConsts.BIGGER_NUMBER,
         CardConsts.SMALLER_NUMBER,
         CardConsts.SUPPORTED_PLAYERS,
@@ -65,6 +66,7 @@ class CardData:
         data_dict = self.__data.to_dict(orient="records")
         return [
             Card(
+                idx=card[CardConsts.IDX],
                 top=card[CardConsts.BIGGER_NUMBER],
                 bottom=card[CardConsts.SMALLER_NUMBER],
                 supported_players=card[CardConsts.SUPPORTED_PLAYERS],

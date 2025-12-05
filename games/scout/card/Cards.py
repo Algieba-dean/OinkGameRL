@@ -4,7 +4,8 @@ from typing import Self
 
 @total_ordering
 class Card:
-    def __init__(self, top: int, bottom: int, supported_players: list[int]):
+    def __init__(self, idx: int, top: int, bottom: int, supported_players: list[int]):
+        self.__idx: int = idx
         self.__top: int = top
         self.__bottom: int = bottom
         self.__supported_players: list[int] = supported_players
@@ -20,6 +21,10 @@ class Card:
 
     def __eq__(self, value):
         return self.top == value.top
+
+    @property
+    def idx(self):
+        return self.__idx
 
     @property
     def top(self):
