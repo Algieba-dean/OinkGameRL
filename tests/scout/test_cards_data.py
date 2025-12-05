@@ -76,15 +76,18 @@ class TestCardValidation:
         ]
         assert len(supported_cards) == expected_card_num
 
+    @pytest.mark.parametrize(argnames="invalid_num", argvalues=[-1, 0, 1, 6, 999])
+    def test_invalid_player_num(self, card_data, invalid_num):
+        with pytest.raises(ValueError, match=f"unexpected player num {invalid_num}"):
+            card_data.get_cards_for_player(player_num=invalid_num)
+
     @pytest.mark.parametrize(
         argnames="player_num",
         argvalues=[2, 4],
     )
     def test_forbidden_card_in_two_or_four_players(self, card_data, player_num):
         # card with 9 and 10 together should not shown up when players is 2 or 4
-        supported_cards = [
-            card for card in card_data.cards if player_num in card.supported_players
-        ]
+        supported_cards = card_data.get_cards_for_player(player_num=player_num)
         is_any_forbidden_card = False
         for card in supported_cards:
             if (card.top == 9 and card.bottom == 10) or (
@@ -97,9 +100,7 @@ class TestCardValidation:
 
     def test_forbidden_card_in_three_players(self, card_data):
         # card with 10 together should not shown up when players is 2 or 4
-        supported_cards = [
-            card for card in card_data.cards if 3 in card.supported_players
-        ]
+        supported_cards = card_data.get_cards_for_player(player_num=3)
         is_any_forbidden_card = False
         for card in supported_cards:
             if card.top == 10 or card.bottom == 10:
