@@ -1,4 +1,4 @@
-idx,name,biggerNumber,smallerNumber,supportedPlayers
+idx_,name,biggerNumber,smallerNumber,supportedPlayers
 1,Zachary,10,9,[5]
 2,Ximena,10,8,"[2, 4, 5]"
 3,William,10,7,"[2, 4, 5]"

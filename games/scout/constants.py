@@ -1,5 +1,6 @@
 class CardConsts:
     # card csv required columns
+    IDX: str = "idx"
     BIGGER_NUMBER: str = "bigger_number"
     SMALLER_NUMBER: str = "smaller_number"
     SUPPORTED_PLAYERS: str = "supported_players"

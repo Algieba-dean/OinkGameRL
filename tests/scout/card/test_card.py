@@ -5,34 +5,45 @@ from games.scout.card.Cards import Card
 
 class TestCardContract:
     def card(self):
-        return Card(top=1, bottom=2, supported_players=[2, 3, 4, 5])
+        return Card(idx=1, top=1, bottom=2, supported_players=[2, 3, 4, 5])
 
     def test_card_attribution(self):
         card = self.card()
         assert card.top == 1
         assert card.bottom == 2
+        assert card.idx == 1
 
-    def test_immutable_properties(self):
-        card = self.card()
+    def test_immutable_idx_properties(self):
+        with pytest.raises(
+            AttributeError,
+            match="property 'idx' of 'Card' object has no setter",
+        ):
+            self.card().idx = 8
+
+    def test_immutable_top_properties(self):
         with pytest.raises(
             AttributeError,
             match="property 'top' of 'Card' object has no setter",
         ):
-            card.top = 10
+            self.card().top = 10
+
+    def test_immutable_bottom_properties(self):
         with pytest.raises(
             AttributeError, match="property 'bottom' of 'Card' object has no setter"
         ):
-            card.bottom = 6
+            self.card().bottom = 6
+
+    def test_immutable_supported_players_properties(self):
         with pytest.raises(
             AttributeError,
             match="property 'supported_players' of 'Card' object has no setter",
         ):
-            card.supported_players = [2, 3, 4, 5]
+            self.card().supported_players = [2, 3, 4, 5]
 
 
 class TestCardFunctionality:
     def card(self):
-        return Card(top=1, bottom=2, supported_players=[2, 3, 4, 5])
+        return Card(idx=1, top=1, bottom=2, supported_players=[2, 3, 4, 5])
 
     def test_card_flip(self):
         card = self.card()
@@ -77,10 +88,10 @@ class TestCardFunctionality:
         expected_compared_result,
     ):
         current_card = Card(
-            top=current_top, bottom=current_bottom, supported_players=[2]
+            idx=1, top=current_top, bottom=current_bottom, supported_players=[2]
         )
         another_card = Card(
-            top=another_top, bottom=another_bottom, supported_players=[2]
+            idx=2, top=another_top, bottom=another_bottom, supported_players=[2]
         )
         compared_result = (current_card > another_card) - (current_card < another_card)
         assert compared_result == expected_compared_result
@@ -91,7 +102,7 @@ class TestCardFunctionality:
         ids=["2,3,4,5", "2,4,5", "5"],
     )
     def test_card_support_player(self, supported_players):
-        card = Card(top=1, bottom=2, supported_players=supported_players)
+        card = Card(idx=1, top=1, bottom=2, supported_players=supported_players)
         assert 1 not in card.supported_players
         for supported_num in supported_players:
             assert supported_num in card.supported_players
