@@ -18,6 +18,7 @@ class CardData:
         CardConsts.SMALLER_NUMBER,
         CardConsts.SUPPORTED_PLAYERS,
     ]
+    ALLOWED_PLAYER_NUM: list[int] = [2, 3, 4, 5]
 
     def __init__(self, data_path: Path | None = None):
         self.__data_path: Path = (
@@ -31,6 +32,11 @@ class CardData:
     @property
     def cards(self) -> list[Card]:
         return self.__cards
+
+    def get_cards_for_player(self, player_num: int) -> list[Card]:
+        if player_num not in self.ALLOWED_PLAYER_NUM:
+            raise ValueError(f"unexpected player num {player_num}")
+        return [card for card in self.cards if player_num in card.supported_players]
 
     def __validate_data_path(self) -> None:
         if self.__data_path.suffix not in self.SUPPORTED_SUFFIXS:
