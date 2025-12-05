@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from gymnasium.utils.env_checker import check_env
 
-from games.OinkGame import OinkGameEnv
+from games.oink_game import OinkGameEnv
 
 
 class DummyOinkGameEnv(OinkGameEnv):

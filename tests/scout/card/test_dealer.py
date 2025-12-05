@@ -2,8 +2,8 @@ import math
 
 import pytest
 
-from games.scout.card.Dealer import Dealer
-from games.scout.Constants import PlayerConsts
+from games.scout.card.dealer import Dealer
+from games.scout.constants import PlayerConsts
 
 
 @pytest.fixture

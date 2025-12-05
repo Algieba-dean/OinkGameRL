@@ -4,9 +4,9 @@ from typing import Any
 import gymnasium as gym
 import pytest
 
-from games.AutoOpponentWrapper import AutoOpponentWrapper
-from games.GameAgent import GameAgent
-from games.OinkGame import OinkGameEnv
+from games.auto_opponent_wrapper import AutoOpponentWrapper
+from games.game_agent import GameAgent
+from games.oink_game import OinkGameEnv
 
 
 class ScriptedEnv(OinkGameEnv):

@@ -2,9 +2,9 @@ import random
 from copy import deepcopy
 from queue import Queue
 
-from games.scout.card.CardData import CardData
-from games.scout.card.Cards import Card
-from games.scout.Constants import PlayerConsts
+from games.scout.card.card_data import CardData
+from games.scout.card.cards import Card
+from games.scout.constants import PlayerConsts
 
 
 class Dealer:
