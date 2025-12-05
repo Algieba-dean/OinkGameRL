@@ -6,3 +6,7 @@ class CardConsts:
 
     # card number
     TOTAL_CARD_NUMBER: int = 45
+
+
+class PlayerConsts:
+    ALLOWED_PLAYER_NUM: list[int] = [2, 3, 4, 5]
