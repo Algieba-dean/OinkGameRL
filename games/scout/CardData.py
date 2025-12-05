@@ -1,9 +1,12 @@
+import importlib.resources
 import json
 from pathlib import Path
 
 import pandas as pd
 
+from games.scout import data
 from games.scout.Cards import Card
+from games.scout.constants import CardConsts
 
 
 class CardData:
@@ -11,17 +14,23 @@ class CardData:
         ".csv",
     ]
     REQUIRED_DATA_COLUMNS: list[str] = [
-        "bigger_number",
-        "smaller_number",
-        "supported_players",
+        CardConsts.BIGGER_NUMBER,
+        CardConsts.SMALLER_NUMBER,
+        CardConsts.SUPPORTED_PLAYERS,
     ]
 
-    def __init__(self, data_path: Path):
-        self.__data_path = data_path
+    def __init__(self, data_path: Path | None = None):
+        self.__data_path: Path = (
+            data_path if data_path is not None else self.__get_default_data_path()
+        )
         self.__validate_data_path()
         self.__validate_and_load_data_csv()
         self.__data = self.__validate_and_load_data_csv()
-        self.cards: list[Card] = self.__convert_data2cards()
+        self.__cards: list[Card] = self.__convert_data2cards()
+
+    @property
+    def cards(self) -> list[Card]:
+        return self.__cards
 
     def __validate_data_path(self) -> None:
         if self.__data_path.suffix not in self.SUPPORTED_SUFFIXS:
@@ -45,15 +54,21 @@ class CardData:
 
     def __convert_data2cards(self) -> list[Card]:
         # validate data format
-        self.__data["supported_players"] = self.__data["supported_players"].apply(
-            json.loads
-        )
+        self.__data[CardConsts.SUPPORTED_PLAYERS] = self.__data[
+            CardConsts.SUPPORTED_PLAYERS
+        ].apply(json.loads)
         data_dict = self.__data.to_dict(orient="records")
         return [
             Card(
-                top=card["bigger_number"],
-                bottom=card["smaller_number"],
-                supported_players=card["supported_players"],
+                top=card[CardConsts.BIGGER_NUMBER],
+                bottom=card[CardConsts.SMALLER_NUMBER],
+                supported_players=card[CardConsts.SUPPORTED_PLAYERS],
             )
             for card in data_dict
         ]
+
+    @staticmethod
+    def __get_default_data_path() -> Path:
+        resource = importlib.resources.files(data) / "card.csv"
+        with importlib.resources.as_file(resource) as path:
+            return path
