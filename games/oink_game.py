@@ -11,7 +11,7 @@ class OinkGameEnv(ABC, gym.Env):
     observation_space: gym.Space
     action_space: gym.Space
 
-    def __init__(self, render_mode: str | None = None):
+    def __init__(self, render_mode: str | None = None) -> None:
         super().__init__()
 
         self._current_player_idx: int = 0

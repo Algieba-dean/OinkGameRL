@@ -20,7 +20,7 @@ class CardData:
         CardConsts.SUPPORTED_PLAYERS,
     ]
 
-    def __init__(self, data_path: Path | None = None):
+    def __init__(self, data_path: Path | None = None) -> None:
         self.__data_path: Path = (
             data_path if data_path is not None else self.__get_default_data_path()
         )
