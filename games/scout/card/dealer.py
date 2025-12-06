@@ -8,7 +8,7 @@ from games.scout.constants import PlayerConsts
 
 
 class Dealer:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__card_data: CardData = CardData()
         self.__current_queue_dict: dict[int, Queue[Card]] = {}
         for player_num in PlayerConsts.PLAYER_CARD_NUM:

@@ -14,7 +14,7 @@ class AutoOpponentWrapper(gym.Wrapper):
 
     def __init__(
         self, env: OinkGameEnv, bots: dict[int, GameAgent], ego_player_idx: int = 0
-    ):
+    ) -> None:
         super().__init__(env)
         self.__bots: dict[int, GameAgent] = bots
         self.__ego_player_idx: int = ego_player_idx
