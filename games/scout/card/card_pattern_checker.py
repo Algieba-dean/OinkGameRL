@@ -5,6 +5,8 @@ from games.scout.enums import CardPattern
 class CardPatternChecker:
     @staticmethod
     def get_pattern(cards: list[Card]) -> CardPattern:
+        if not cards:
+            return CardPattern.INVALID_PATTERN
         if CardPatternChecker.__is_same_rank(cards=cards):
             return CardPattern.SAME_RANK
         if CardPatternChecker.__is_sequence(cards=cards):
