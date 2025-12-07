@@ -19,6 +19,7 @@ class TestGetCardPattern:
             ([1, 1, 1], CardPattern.SAME_RANK),
             ([9, 9, 9, 9], CardPattern.SAME_RANK),
             # invalid pattern
+            ([], CardPattern.INVALID_PATTERN),
             ([1, 3], CardPattern.INVALID_PATTERN),
             ([1, 2, 4], CardPattern.INVALID_PATTERN),
             ([1, 3, 5, 7, 9], CardPattern.INVALID_PATTERN),
