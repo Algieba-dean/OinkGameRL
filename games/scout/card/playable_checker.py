@@ -35,6 +35,25 @@ class PlayableChecker:
         )
 
     @staticmethod
+    def get_all_playable_subsets(
+        board_cards: list[Card], target_cards: list[Card]
+    ) -> list[tuple[int, int]]:
+        playable_subsets = []
+        for start in range(len(target_cards)):
+            for end in range(len(target_cards)):
+                subset = target_cards[start : end + 1]
+                pattern = CardPatternChecker.get_pattern(cards=subset)
+                if (
+                    pattern == CardPattern.INVALID_PATTERN
+                    or not PlayableChecker.is_playable(
+                        board_cards=board_cards, target_cards=subset
+                    )
+                ):
+                    continue
+                playable_subsets.append((start, end))
+        return playable_subsets
+
+    @staticmethod
     def __is_value_bigger(board_cards: list[Card], target_cards: list[Card]) -> bool:
         # both pattern should be the same, both length should be same
         pattern = CardPatternChecker.get_pattern(cards=board_cards)
