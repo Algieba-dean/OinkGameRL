@@ -2,7 +2,6 @@ from copy import copy
 
 import pytest
 
-from games.scout.card.cards import Card
 from games.scout.constants import BoardConsts
 from games.scout.enums import ScoutPosition
 from games.scout.game_status.board import Board
@@ -23,15 +22,13 @@ class TestBoardContract:
         ):
             board.cards = []
 
-    def test_immutable_cards_value(self, board, mocker):
-        mock_cards = [
-            Card(idx=1, top=top, bottom=1, supported_players=[2]) for top in range(5)
-        ]
+    def test_immutable_cards_value(self, board, mocker, card_factory):
+        mock_cards = [card_factory(top=top) for top in range(5)]
         mocker.patch.object(board, "_Board__cards", mock_cards)
         with pytest.raises(
             TypeError, match="'tuple' object does not support item assignment"
         ):
-            board.cards[0] = Card(idx=1, top=5, bottom=1, supported_players=[2])
+            board.cards[0] = card_factory(top=5)
 
     def test_immutable_owner_id_property(self, board):
         with pytest.raises(
@@ -47,10 +44,8 @@ class TestBoardContract:
 
 class TestPlayToBoard:
     @pytest.mark.parametrize(argnames="card_tops", argvalues=[[1], [1, 2], [2, 2]])
-    def test_play_to_board(self, card_tops, board):
-        played_cards = [
-            Card(idx=1, top=top, bottom=1, supported_players=[2]) for top in card_tops
-        ]
+    def test_play_to_board(self, card_tops, board, card_factory):
+        played_cards = [card_factory(top=top) for top in card_tops]
         board.play_to_board(player_idx=FOO_PLAYER_IDX, played_cards=played_cards)
         assert board.owner_idx == FOO_PLAYER_IDX
         assert list(board.cards) == played_cards
@@ -60,19 +55,17 @@ class TestScoutFromBoard:
     MOCK_OWNER_IDX = 1
 
     @pytest.fixture
-    def mocked_normal_board(self, mocker) -> Board:
+    def mocked_normal_board(self, mocker, card_factory) -> Board:
         mocked_board = Board()
-        cards = [
-            Card(idx=1, top=top, bottom=1, supported_players=[2]) for top in range(1, 5)
-        ]
+        cards = [card_factory(top=top) for top in range(1, 5)]
         mocker.patch.object(mocked_board, "_Board__cards", cards)
         mocker.patch.object(mocked_board, "_Board__owner_idx", self.MOCK_OWNER_IDX)
         return mocked_board
 
     @pytest.fixture
-    def mocked_one_card_board(self, mocker) -> Board:
+    def mocked_one_card_board(self, mocker, card_factory) -> Board:
         mocked_board = Board()
-        cards = [Card(idx=1, top=1, bottom=1, supported_players=[2])]
+        cards = [card_factory(top=1)]
         mocker.patch.object(mocked_board, "_Board__owner_idx", self.MOCK_OWNER_IDX)
         mocker.patch.object(mocked_board, "_Board__cards", cards)
         return mocked_board

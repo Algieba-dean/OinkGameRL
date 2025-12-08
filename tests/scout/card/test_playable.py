@@ -1,11 +1,6 @@
 import pytest
 
-from games.scout.card.cards import Card
 from games.scout.card.playable_checker import PlayableChecker
-
-
-def to_card(top: int) -> Card:
-    return Card(idx=1, top=top, bottom=1, supported_players=[2])
 
 
 @pytest.mark.parametrize(
@@ -43,9 +38,9 @@ def to_card(top: int) -> Card:
         ([1, 1], [2, 2], True),
     ],
 )
-def test_target_playable(board_tops, target_tops, is_playable):
-    board_cards = [to_card(top) for top in board_tops]
-    target_cards = [to_card(top) for top in target_tops]
+def test_target_playable(board_tops, target_tops, is_playable, card_factory):
+    board_cards = [card_factory(top=top) for top in board_tops]
+    target_cards = [card_factory(top=top) for top in target_tops]
     assert (
         PlayableChecker.is_playable(board_cards=board_cards, target_cards=target_cards)
         is is_playable
@@ -110,8 +105,8 @@ class TestGetPlayableSubsets:
             ),
         ],
     )
-    def test_empty_board(self, target_tops, expected_subsets):
-        target_cards = [to_card(top=top) for top in target_tops]
+    def test_empty_board(self, target_tops, expected_subsets, card_factory):
+        target_cards = [card_factory(top=top) for top in target_tops]
         subsets = PlayableChecker.get_all_playable_subsets(
             board_cards=[], target_cards=target_cards
         )
