@@ -22,3 +22,7 @@ class PlayerConsts:
         4: 11,
         5: 9,
     }
+
+
+class BoardConsts:
+    EMPTY_OWNER_ID = -1
