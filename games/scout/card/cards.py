@@ -1,8 +1,6 @@
-from functools import total_ordering
 from typing import Self
 
 
-@total_ordering
 class Card:
     def __init__(
         self, idx: int, top: int, bottom: int, supported_players: list[int]
@@ -18,11 +16,10 @@ class Card:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def __lt__(self, value) -> bool:
-        return self.top < value.top
-
     def __eq__(self, value) -> bool:
-        return self.top == value.top
+        if self.idx != value.idx:
+            return False
+        return {self.top, self.bottom} == {value.top, value.bottom}
 
     @property
     def idx(self) -> int:
@@ -43,9 +40,3 @@ class Card:
     def flip(self) -> Self:
         self.__top, self.__bottom = self.__bottom, self.__top
         return self
-
-
-class Cards: ...
-
-
-class CardInitilizer: ...
