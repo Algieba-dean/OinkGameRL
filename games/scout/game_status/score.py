@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 from games.scout.constants import PlayerConsts
 
 
@@ -14,8 +16,9 @@ class Score:
         return self.__player_num
 
     @property
-    def score_dict(self) -> dict[int, int]:
-        return self.__score_dict
+    def score_dict(self) -> MappingProxyType[int, int]:
+        # wrap the dcit to read-only
+        return MappingProxyType(self.__score_dict)
 
     def clean_all_score(self, player_num: int | None = None) -> None:
         if player_num is None:
