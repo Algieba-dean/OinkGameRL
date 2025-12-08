@@ -1,7 +1,6 @@
 import pytest
 
 from games.scout.card.card_pattern_checker import CardPatternChecker
-from games.scout.card.cards import Card
 from games.scout.enums import CardPattern
 
 
@@ -28,8 +27,6 @@ class TestGetCardPattern:
             ([3, 1, 2], CardPattern.INVALID_PATTERN),
         ],
     )
-    def test_get_card_pattern(self, top_values, expected_pattern):
-        cards = [
-            Card(idx=1, top=top, bottom=1, supported_players=[2]) for top in top_values
-        ]
+    def test_get_card_pattern(self, top_values, expected_pattern, card_factory):
+        cards = [card_factory(top=top) for top in top_values]
         assert CardPatternChecker.get_pattern(cards=cards) == expected_pattern

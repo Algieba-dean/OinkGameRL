@@ -12,6 +12,7 @@ class TestCardContract:
         assert card.top == 1
         assert card.bottom == 2
         assert card.idx == 1
+        assert card.supported_players == [2, 3, 4, 5]
 
     def test_immutable_idx_properties(self):
         with pytest.raises(
