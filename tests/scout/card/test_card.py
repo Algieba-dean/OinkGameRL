@@ -60,42 +60,39 @@ class TestCardFunctionality:
         assert repr(card) == f"[{card.top}]/{card.bottom}"
 
     @pytest.mark.parametrize(
-        argnames=(
-            "current_top, current_bottom, another_top, another_bottom, expected_compared_result"  # compare result 0 is =, -1 is <, 1 is >
-        ),
+        argnames="current_idx, current_top, current_bottom,another_idx,another_top,another_bottom,expected_result",
         argvalues=[
-            (1, 2, 3, 4, -1),
-            (1, 3, 2, 3, -1),
-            (4, 3, 2, 1, 1),
-            (2, 1, 1, 9, 1),
-            (9, 10, 9, 8, 0),
-            (3, 1, 3, 2, 0),
-        ],
-        ids=[
-            "both top bottom smaller",
-            "top smaller bottom bigger",
-            "both top bottom bigger",
-            "top bigger, bottom smaller",
-            "top equal, bottom bigger",
-            "top equal, bottom smaller",
+            (1, 1, 2, 2, 1, 2, False),
+            (1, 1, 2, 1, 1, 3, False),
+            (1, 1, 2, 1, 3, 2, False),
+            (1, 1, 2, 1, 1, 2, True),
+            (1, 1, 2, 1, 2, 1, True),
         ],
     )
-    def test_card_comparison(
+    def test_card_equality(
         self,
+        current_idx,
         current_top,
         current_bottom,
+        another_idx,
         another_top,
         another_bottom,
-        expected_compared_result,
+        expected_result,
     ):
         current_card = Card(
-            idx=1, top=current_top, bottom=current_bottom, supported_players=[2]
+            idx=current_idx,
+            top=current_top,
+            bottom=current_bottom,
+            supported_players=[2],
         )
         another_card = Card(
-            idx=2, top=another_top, bottom=another_bottom, supported_players=[2]
+            idx=another_idx,
+            top=another_top,
+            bottom=another_bottom,
+            supported_players=[2],
         )
-        compared_result = (current_card > another_card) - (current_card < another_card)
-        assert compared_result == expected_compared_result
+        result = current_card == another_card
+        assert result is expected_result
 
     @pytest.mark.parametrize(
         argnames="supported_players",
