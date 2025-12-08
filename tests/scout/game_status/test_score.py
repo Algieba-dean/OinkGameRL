@@ -32,6 +32,12 @@ class TestScoreContract:
         ):
             score.score_dict = {}
 
+    def test_imutable_score_dict_value(self, score):
+        with pytest.raises(
+            TypeError, match="'mappingproxy' object does not support item assignment"
+        ):
+            score.score_dict[0] = 10
+
     @pytest.mark.parametrize(argnames="invalid_num", argvalues=[-1, 0, 1, 6])
     def test_invalid_player_num(self, invalid_num):
         with pytest.raises(ValueError, match=f"invalid player num {invalid_num} *"):
