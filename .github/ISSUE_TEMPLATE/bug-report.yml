@@ -1,0 +1,68 @@
+name: Bug Report
+description: Create a report to help us improve OinkGameRL
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: I tried to flip a card but the environment crashed...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Please verify that the issue is reproducible with the latest version.
+      placeholder: |
+        1. Initialize ScoutEnv
+        2. Call step() with action X
+        3. Error occurs
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: OinkGameRL Version
+      description: Which version are you using? (e.g., v0.1.0 or main branch commit hash)
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: python-version
+    attributes:
+      label: Python Version
+      options:
+        - "3.10"
+        - "3.11"
+        - "3.12"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
