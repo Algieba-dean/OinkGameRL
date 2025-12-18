@@ -5,7 +5,7 @@ import gymnasium as gym
 
 
 class OinkGameEnv(ABC, gym.Env):
-    metadata = {"render_models": [None, "human", "json", "ansi"]}
+    metadata = {"render_modes": [None, "human", "json", "ansi"]}
 
     # by pass the MyPy check and force subclass to implemente it. As it's just a hint for type, won't move it to __init__
     observation_space: gym.Space
@@ -16,7 +16,7 @@ class OinkGameEnv(ABC, gym.Env):
 
         self._current_player_idx: int = 0
         self._num_players: int = 0
-        if render_mode not in self.metadata["render_models"]:
+        if render_mode not in self.metadata["render_modes"]:
             raise NotImplementedError(
                 f"render mode {self.render_mode} is not supported"
             )

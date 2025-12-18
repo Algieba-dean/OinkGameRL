@@ -108,7 +108,7 @@ class AutoOpponentWrapper(gym.Wrapper):
             observation, reward, terminated, truncated, info = self.env.step(
                 action=bot_action
             )
-        return observation, float(reward), terminated, terminated, info
+        return observation, float(reward), terminated, truncated, info
 
     @staticmethod
     def __need_process_opponent_turns(
