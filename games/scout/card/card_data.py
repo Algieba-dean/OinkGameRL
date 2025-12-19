@@ -1,8 +1,8 @@
+import csv
 import importlib.resources
 import json
+from functools import lru_cache
 from pathlib import Path
-
-import pandas as pd
 
 from games.scout import data
 from games.scout.card.cards import Card
@@ -25,9 +25,7 @@ class CardData:
             data_path if data_path is not None else self.__get_default_data_path()
         )
         self.__validate_data_path()
-        self.__validate_and_load_data_csv()
-        self.__data = self.__validate_and_load_data_csv()
-        self.__cards: list[Card] = self.__convert_data2cards()
+        self.__cards: list[Card] = self.__load_cards_cached(self.__data_path)
 
     @property
     def cards(self) -> list[Card]:
@@ -46,36 +44,56 @@ class CardData:
         if not self.__data_path.exists():
             raise FileNotFoundError(f"data path {self.__data_path} does not exist.")
 
-    def __validate_and_load_data_csv(self) -> pd.DataFrame:
-        with open(file=self.__data_path, encoding="utf-8") as f:
-            data = pd.read_csv(filepath_or_buffer=f)
-        missing_column = []
-        # check missing required data columns
-        for required_column in self.REQUIRED_DATA_COLUMNS:
-            if required_column not in data.columns:
-                missing_column.append(required_column)
-        if len(missing_column) > 0:
-            raise ValueError(f"missing {missing_column} in {self.__data_path}")
-        return data
-
-    def __convert_data2cards(self) -> list[Card]:
-        # validate data format
-        self.__data[CardConsts.SUPPORTED_PLAYERS] = self.__data[
-            CardConsts.SUPPORTED_PLAYERS
-        ].apply(json.loads)
-        data_dict = self.__data.to_dict(orient="records")
-        return [
-            Card(
-                idx=card[CardConsts.IDX],
-                top=card[CardConsts.BIGGER_NUMBER],
-                bottom=card[CardConsts.SMALLER_NUMBER],
-                supported_players=card[CardConsts.SUPPORTED_PLAYERS],
-            )
-            for card in data_dict
-        ]
-
     @staticmethod
     def __get_default_data_path() -> Path:
         resource = importlib.resources.files(data) / "card.csv"
         with importlib.resources.as_file(resource) as path:
             return path
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def __load_cards_cached(path: Path) -> list[Card]:
+        """take response of I/O and parsing the cards
+
+        Args:
+            path (Path): card path
+
+        Returns:
+            list[Card]: cards
+        """
+        cards = []
+
+        # load data
+        with open(file=path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+
+            # validate columns
+            if reader.fieldnames is None:
+                raise ValueError(f"empty file {path}")
+            missing_colums = [
+                column
+                for column in CardData.REQUIRED_DATA_COLUMNS
+                if column not in reader.fieldnames
+            ]
+            if missing_colums:
+                raise ValueError(f"missing {missing_colums} in {path}")
+
+            # parsing data
+            for row in reader:
+                idx = int(row[CardConsts.IDX])
+                top = int(row[CardConsts.BIGGER_NUMBER])
+                bottom = int(row[CardConsts.SMALLER_NUMBER])
+
+                # parse supported_players
+                supported_players: list[int] = json.loads(
+                    row[CardConsts.SUPPORTED_PLAYERS]
+                )
+                cards.append(
+                    Card(
+                        idx=idx,
+                        top=top,
+                        bottom=bottom,
+                        supported_players=supported_players,
+                    )
+                )
+        return cards
