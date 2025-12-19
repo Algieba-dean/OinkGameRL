@@ -50,6 +50,11 @@ class TestLoadCards:
         ):
             CardData(data_path=invalid_data_file)
 
+    def test_load_empty_data(self, scout_test_data_dir):
+        empty_data_file = scout_test_data_dir / "empty_data.csv"
+        with pytest.raises(ValueError):
+            CardData(data_path=empty_data_file)
+
     def test_load_invalid_data(self, scout_test_data_dir):
         invalid_data_file = scout_test_data_dir / "invalid_supported_players.csv"
         with pytest.raises(ValueError):
