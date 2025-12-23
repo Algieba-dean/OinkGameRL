@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from games.scout.card.dealer import Dealer
@@ -8,19 +9,86 @@ from games.scout.constants import PlayerConsts
 
 @pytest.fixture
 def dealer() -> Dealer:
-    return Dealer()
+    return Dealer(random_generator=np.random.default_rng())
 
 
 class TestDealerInteraction:
     def test_init_calls_internal_methods(self, mocker):
         flip_cards_mock = mocker.spy(Dealer, "_Dealer__random_flip_all_cards")
+        shuffle_cards_mock = mocker.spy(Dealer, "_Dealer__random_shuffle_all_cards")
         initial_cards_mock = mocker.spy(Dealer, "_Dealer__initailize_card_queue_dict")
 
-        Dealer()
+        Dealer(random_generator=np.random.default_rng())
         assert (
             flip_cards_mock.call_count == 4
         )  # player 2,3,4,5, totally will be called in 4 times
+        assert (
+            shuffle_cards_mock.call_count == 4
+        )  # player 2,3,4,5, totally will be called in 4 times
         initial_cards_mock.assert_called_once()
+
+    def test_reset_calls_internal_methods(self, mocker):
+        mock_dealer = Dealer(random_generator=np.random.default_rng())
+        flip_cards_mock = mocker.spy(Dealer, "_Dealer__random_flip_all_cards")
+        shuffle_cards_mock = mocker.spy(Dealer, "_Dealer__random_shuffle_all_cards")
+        initial_cards_mock = mocker.spy(Dealer, "_Dealer__initailize_card_queue_dict")
+
+        mock_dealer.reset(random_generator=np.random.default_rng())
+
+        assert (
+            flip_cards_mock.call_count == 4
+        )  # player 2,3,4,5, totally will be called in 4 times
+        assert (
+            shuffle_cards_mock.call_count == 4
+        )  # player 2,3,4,5, totally will be called in 4 times
+        initial_cards_mock.assert_called_once()
+
+
+class TestDealerReproducible:
+    seed_1 = 213
+    seed_2 = 999
+
+    @pytest.mark.parametrize(
+        argnames="player_num", argvalues=PlayerConsts.ALLOWED_PLAYER_NUM
+    )
+    def test_diff_dealer_same_generator(self, player_num):
+        dealer1 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        dealer2 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        assert dealer1.dispatch_cards(player_num=player_num) == dealer2.dispatch_cards(
+            player_num=player_num
+        )
+
+    @pytest.mark.parametrize(
+        argnames="player_num", argvalues=PlayerConsts.ALLOWED_PLAYER_NUM
+    )
+    def test_diff_dealer_same_generator_with_reset(self, player_num):
+        dealer1 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        dealer2 = Dealer(random_generator=np.random.default_rng(seed=self.seed_2))
+        dealer2.reset(random_generator=np.random.default_rng(seed=self.seed_1))
+        assert dealer1.dispatch_cards(player_num=player_num) == dealer2.dispatch_cards(
+            player_num=player_num
+        )
+
+    @pytest.mark.parametrize(
+        argnames="player_num", argvalues=PlayerConsts.ALLOWED_PLAYER_NUM
+    )
+    def test_diff_dealer_diff_generator(self, player_num):
+        dealer1 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        dealer2 = Dealer(random_generator=np.random.default_rng(seed=self.seed_2))
+        assert dealer1.dispatch_cards(player_num=player_num) != dealer2.dispatch_cards(
+            player_num=player_num
+        )
+
+    @pytest.mark.parametrize(
+        argnames="player_num", argvalues=PlayerConsts.ALLOWED_PLAYER_NUM
+    )
+    def test_diff_dealer_diff_generator_after_reset(self, player_num):
+        dealer1 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        dealer2 = Dealer(random_generator=np.random.default_rng(seed=self.seed_1))
+        dealer2.reset(random_generator=np.random.default_rng(seed=self.seed_2))
+        assert dealer1.dispatch_cards(player_num=player_num) != dealer2.dispatch_cards(
+            player_num=player_num
+        )
 
 
 class TestDealerBasic:
