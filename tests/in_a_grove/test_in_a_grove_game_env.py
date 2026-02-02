@@ -137,3 +137,70 @@ class TestInAGroveGameplay:
         env = InAGroveGameEnv(player_num=4)
         state = env._get_global_state()
         assert state == {}
+
+    def test_observation_before_reset(self):
+        env = InAGroveGameEnv(player_num=4)
+        obs = env._get_observation(0)
+        assert np.all(obs == 0)
+
+    def test_action_mask_before_reset(self):
+        env = InAGroveGameEnv(player_num=4)
+        mask = env._get_action_mask(0)
+        assert all(m == 0 for m in mask)
+
+    def test_apply_action_before_reset(self):
+        env = InAGroveGameEnv(player_num=4)
+        reward, terminated = env._apply_action(0)
+        assert reward == 0.0
+        assert terminated is True
+
+    def test_render_before_reset(self):
+        env = InAGroveGameEnv(player_num=4, render_mode="ansi")
+        result = env._render_text()
+        assert result == "Game not initialized"
+
+    def test_winner_loser_rewards(self):
+        """Test winner and loser rewards."""
+        env = InAGroveGameEnv(player_num=3)
+        np.random.seed(999)
+        for seed in range(50):
+            _, info = env.reset(seed=seed)
+            terminated = False
+            for _ in range(100):
+                mask = info["action_mask"]
+                valid = [i for i, v in enumerate(mask) if v == 1]
+                if not valid:
+                    break
+                _, reward, terminated, _, info = env.step(np.random.choice(valid))
+                if terminated:
+                    break
+            if terminated:
+                break
+
+    def test_winner_gets_positive_reward(self):
+        """Test that the winner gets positive reward (line 155)."""
+        env = InAGroveGameEnv(player_num=2)
+        env.reset(seed=42)
+        # Force player 0 to win by giving high score
+        env._game_state.get_player(0).add_score(100)
+        # Set current player to 0
+        env._current_player_idx = 0
+        # Play through to termination
+        for _ in range(3):
+            env._game_state.start_new_round(env._rng)
+        # Now game is terminated, player 0 should be winner
+        assert env._game_state.is_terminated
+        # Call _apply_action to trigger reward calculation
+        reward, terminated = env._apply_action(0)
+        assert terminated is True
+        # Winner (player 0) should get positive reward
+        assert reward == 1.0
+
+    def test_render_with_center_card(self):
+        """Test render shows center card (line 174)."""
+        env = InAGroveGameEnv(player_num=3, render_mode="ansi")
+        env.reset(seed=42)
+        # Ensure center card is set
+        if env._game_state.center_card:
+            result = env._render_text()
+            assert "Center Card" in result

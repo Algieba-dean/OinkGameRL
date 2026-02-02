@@ -268,6 +268,22 @@ class TestResolveShowdownEdgeCases:
         result = gs.resolve_showdown()
         assert result is None
 
+    def test_betting_player_with_card_another_without(self):
+        """Test showdown with mixed card states (covers line 144)."""
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        gs.reset(rng)
+        # Player 0 bets with card
+        gs.get_player(0).place_bet()
+        gs.add_to_pot(1)
+        # Player 1 bets but has no card
+        gs.get_player(1).place_bet()
+        gs.add_to_pot(1)
+        gs.get_player(1)._Player__card = None
+        result = gs.resolve_showdown()
+        # Player 0 should win since player 1 has no card
+        assert result == 0
+
 
 class TestGetWinnerTie:
     """Test get_winner with tied scores."""

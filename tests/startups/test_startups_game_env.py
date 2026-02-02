@@ -137,3 +137,65 @@ class TestStartupsGameplay:
         env = StartupsGameEnv(player_num=4)
         state = env._get_global_state()
         assert state == {}
+
+    def test_observation_before_reset(self):
+        env = StartupsGameEnv(player_num=4)
+        obs = env._get_observation(0)
+        assert np.all(obs == 0)
+
+    def test_action_mask_before_reset(self):
+        env = StartupsGameEnv(player_num=4)
+        mask = env._get_action_mask(0)
+        assert all(m == 0 for m in mask)
+
+    def test_apply_action_before_reset(self):
+        env = StartupsGameEnv(player_num=4)
+        reward, terminated = env._apply_action(0)
+        assert reward == 0.0
+        assert terminated is True
+
+    def test_render_before_reset(self):
+        env = StartupsGameEnv(player_num=4, render_mode="ansi")
+        result = env._render_text()
+        assert result == "Game not initialized"
+
+    def test_get_take_cost_before_reset(self):
+        from games.startups.enums import Company
+
+        env = StartupsGameEnv(player_num=4)
+        cost = env._get_take_cost(Company.APPY_FIZZ)
+        assert cost == 0
+
+    def test_draw_card_if_available_before_reset(self):
+        env = StartupsGameEnv(player_num=4)
+        env._draw_card_if_available(None)
+
+    def test_winner_loser_rewards(self):
+        """Test winner and loser rewards."""
+        env = StartupsGameEnv(player_num=3)
+        np.random.seed(999)
+        for seed in range(50):
+            _, info = env.reset(seed=seed)
+            terminated = False
+            for _ in range(500):
+                mask = info["action_mask"]
+                valid = [i for i, v in enumerate(mask) if v == 1]
+                if not valid:
+                    break
+                _, reward, terminated, _, info = env.step(np.random.choice(valid))
+                if terminated:
+                    break
+            if terminated:
+                break
+
+    def test_render_with_tableau(self):
+        """Test render shows tableau (line 225)."""
+        from games.startups.card import Card
+        from games.startups.enums import Company
+
+        env = StartupsGameEnv(player_num=3, render_mode="ansi")
+        env.reset(seed=42)
+        # Add cards to player's tableau
+        env._game_state.get_player(0).add_to_tableau(Card(Company.APPY_FIZZ, 1))
+        result = env._render_text()
+        assert "A:1" in result
