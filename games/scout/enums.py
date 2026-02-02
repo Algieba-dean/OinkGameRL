@@ -17,5 +17,10 @@ class GameAction(IntEnum):
 
 
 class ScoutPosition(IntEnum):
-    LEFT = 1
-    RIGHT = 2
+    LEFT = 0
+    RIGHT = 1
+
+
+class ScoutFlip(IntEnum):
+    NO = 0
+    YES = 1
