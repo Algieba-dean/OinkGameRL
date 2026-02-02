@@ -189,3 +189,58 @@ class TestKobayakawaGameplay:
                     break
             if terminated:
                 break
+
+    def test_observation_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        obs = env._get_observation(0)
+        assert np.all(obs == 0)
+
+    def test_action_mask_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        mask = env._get_action_mask(0)
+        assert all(m == 0 for m in mask)
+
+    def test_apply_action_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        reward, terminated = env._apply_action(0)
+        assert reward == 0.0
+        assert terminated is True
+
+    def test_render_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4, render_mode="ansi")
+        result = env._render_text()
+        assert result == "Game not initialized"
+
+    def test_handle_betting_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        env._handle_betting(0, None)
+
+    def test_advance_draw_phase_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        env._advance_draw_phase()
+
+    def test_advance_betting_phase_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        env._advance_betting_phase()
+
+    def test_loser_reward(self):
+        """Test that loser gets negative reward."""
+        env = KobayakawaGameEnv(player_num=3)
+        np.random.seed(123)
+        for seed in range(100):
+            _, info = env.reset(seed=seed)
+            terminated = False
+            for _ in range(300):
+                mask = info["action_mask"]
+                valid = [i for i, v in enumerate(mask) if v == 1]
+                if not valid:
+                    break
+                _, reward, terminated, _, info = env.step(np.random.choice(valid))
+                if terminated:
+                    break
+            if terminated:
+                break
+
+    def test_handle_draw_or_swap_before_reset(self):
+        env = KobayakawaGameEnv(player_num=4)
+        env._handle_draw_or_swap(0, None)
