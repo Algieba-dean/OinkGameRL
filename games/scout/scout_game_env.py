@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium import spaces
 
 from games.oink_game import OinkGameEnv
+from games.registry import register_game
 from games.scout.card.dealer import Dealer
 from games.scout.card.playable_checker import PlayableChecker
 from games.scout.constants import BoardConsts, PlayerConsts
@@ -12,6 +13,7 @@ from games.scout.game_status.game_state import GameState
 from games.scout.player.action import PlayAction, ScoutAction, ScoutPlayAction
 
 
+@register_game("scout")
 class ScoutGameEnv(OinkGameEnv):
     """Scout card game environment implementing the OinkGameEnv interface.
 
