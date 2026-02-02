@@ -238,3 +238,49 @@ class TestStartNewRoundWithEliminated:
         gs.start_new_round(rng)
         # First non-eliminated player should be current
         assert gs.current_player_idx == 1
+
+
+class TestResolveShowdownEdgeCases:
+    """Test edge cases in resolve_showdown."""
+
+    def test_betting_player_with_no_card(self):
+        """Test showdown when betting player has no card (line 144)."""
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        gs.reset(rng)
+        p0 = gs.get_player(0)
+        p0.place_bet()
+        gs.add_to_pot(1)
+        # Remove player's card
+        p0._Player__card = None
+        result = gs.resolve_showdown()
+        assert result is None
+
+    def test_all_betting_players_no_cards(self):
+        """Test showdown when all betting players have no cards (line 151)."""
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        gs.reset(rng)
+        for p in gs.players:
+            p.place_bet()
+            gs.add_to_pot(1)
+            p._Player__card = None
+        result = gs.resolve_showdown()
+        assert result is None
+
+
+class TestGetWinnerTie:
+    """Test get_winner with tied scores."""
+
+    def test_tie_returns_none(self):
+        """Test that tied scores return None (line 169)."""
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        # Play 8 rounds to terminate
+        for _ in range(8):
+            gs.start_new_round(rng)
+        # Ensure all players have same coins
+        for p in gs.players:
+            p._Player__coins = 10
+        winner = gs.get_winner()
+        assert winner is None

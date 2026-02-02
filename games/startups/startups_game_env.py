@@ -137,7 +137,7 @@ class StartupsGameEnv(OinkGameEnv):
             mask[i] = 1
 
         market_start = self.MAX_HAND_SIZE
-        for i in range(len(self._game_state.market)):
+        for i in range(min(len(self._game_state.market), self.MAX_MARKET_SIZE)):
             card = self._game_state.market[i]
             cost = self._get_take_cost(card.company)
             if player.coins >= cost:
