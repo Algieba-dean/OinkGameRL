@@ -140,15 +140,12 @@ class GameState:
 
         effective_values: dict[int, int] = {}
         for p in betting_players:
-            if p.card is None:
-                continue
+            assert p.card is not None  # guaranteed by betting_players filter
             val = p.card.value
             if p == min_card_player and self.__kobayakawa_card:
                 val += self.__kobayakawa_card.value
             effective_values[p.player_idx] = val
 
-        if not effective_values:
-            return None
         winner_idx = max(effective_values, key=lambda k: effective_values[k])
         self.__players[winner_idx].win_pot(self.__pot)
         return winner_idx

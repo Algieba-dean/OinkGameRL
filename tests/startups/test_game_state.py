@@ -80,6 +80,26 @@ class TestGameStateScoring:
         gs.get_player(0).add_to_tableau(Card(Company.APPY_FIZZ, 2))
         assert gs._has_majority(0, Company.APPY_FIZZ)
 
+    def test_has_majority_no_cards(self):
+        """Test _has_majority returns False when player has no cards."""
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        gs.reset(rng)
+        # Player has no cards for this company
+        assert gs._has_majority(0, Company.APPY_FIZZ) is False
+
+    def test_has_majority_tie(self):
+        """Test _has_majority returns False when tied."""
+        from games.startups.card import Card
+
+        gs = GameState(player_num=3)
+        rng = np.random.default_rng(42)
+        gs.reset(rng)
+        # Both players have same count
+        gs.get_player(0).add_to_tableau(Card(Company.APPY_FIZZ, 1))
+        gs.get_player(1).add_to_tableau(Card(Company.APPY_FIZZ, 2))
+        assert gs._has_majority(0, Company.APPY_FIZZ) is False
+
 
 class TestGameStateTermination:
     """Test game termination."""
