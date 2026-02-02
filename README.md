@@ -6,7 +6,17 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Algieba-dean/OinkGameRL)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Algieba-dean/OinkGameRL)
 
-This project implements a game environment and AI agents using `gymnasium`. It follows modern Python engineering practices, utilizing **uv** for dependency management, **Ruff** for linting, and **Pre-commit** for workflow safety.
+This project implements game environments and AI agents for Oink Games using `gymnasium`. It follows modern Python engineering practices, utilizing **uv** for dependency management, **Ruff** for linting, and **Pre-commit** for workflow safety.
+
+## Supported Games
+
+| Game           | Status      | Players | Description                                      |
+| -------------- | ----------- | ------- | ------------------------------------------------ |
+| **Scout**      | Implemented | 2-5     | Card game where players build sets and sequences |
+| **Maskmen**    | Planned     | 2-6     | Wrestling card game with hidden roles            |
+| **Kobayakawa** | Planned     | 3-6     | Minimalist betting card game                     |
+| **Startups**   | Planned     | 3-7     | Investment card game                             |
+| **In a Grove** | Planned     | 2-4     | Deduction card game                              |
 
 ## Prerequisites
 
@@ -113,9 +123,11 @@ uv run pre-commit run --all-files
 
 - **Main Branch Protection:** Direct pushes to `main` (or `master`) are **blocked**.
 - **Feature Branches:** Always create a new branch for your changes:
+
   ```bash
   git checkout -b feature/my-new-feature
   ```
+
 - **Pull Requests:** Submit a PR to merge your changes. CI checks must pass before merging.
 
 ### Secrets Detection
@@ -123,6 +135,7 @@ uv run pre-commit run --all-files
 We use `detect-secrets` to prevent committing API keys or passwords.
 
 - If the hook blocks your commit due to a "false positive" (a random string that looks like a secret), you can update the baseline:
+
   ```bash
   uv run detect-secrets scan --update .secrets.baseline
   git add .secrets.baseline
@@ -140,14 +153,44 @@ We use `detect-secrets` to prevent committing API keys or passwords.
 
 ```text
 OinkGameRL/
-├── games/               # Source code for environments and agents
-├── tests/               # Pytest test suite
-├── .github/             # GitHub Actions CI configuration
-├── .venv/               # Virtual environment (managed by uv)
-├── pyproject.toml       # Project configuration & dependencies
-├── uv.lock              # Dependency lock file (DO NOT EDIT MANUALLY)
-├── .pre-commit-config.yaml # Git hooks configuration
-└── README.md            # This file
+├── games/                      # Source code for environments and agents
+│   ├── oink_game.py            # Abstract base class for all game environments
+│   ├── game_agent.py           # Abstract base class for AI agents
+│   ├── auto_opponent_wrapper.py # Wrapper for multi-agent environments
+│   ├── scout/                  # Scout game implementation
+│   │   ├── card/               # Card-related modules
+│   │   ├── game_status/        # Game state management
+│   │   ├── player/             # Player and action modules
+│   │   └── scout_game_env.py   # Main environment
+│   ├── maskmen/                # Maskmen game (planned)
+│   ├── kobayakawa/             # Kobayakawa game (planned)
+│   ├── startups/               # Startups game (planned)
+│   └── in_a_grove/             # In a Grove game (planned)
+├── tests/                      # Pytest test suite
+├── .github/                    # GitHub Actions CI configuration
+├── pyproject.toml              # Project configuration & dependencies
+├── uv.lock                     # Dependency lock file (DO NOT EDIT MANUALLY)
+├── .pre-commit-config.yaml     # Git hooks configuration
+└── README.md                   # This file
+```
+
+## Quick Start
+
+```python
+from games.scout.scout_game_env import ScoutGameEnv
+
+# Create environment
+env = ScoutGameEnv(player_num=4, render_mode="human")
+
+# Reset and play
+obs, info = env.reset(seed=42)
+action_mask = info["action_mask"]
+
+# Take a valid action
+valid_actions = [i for i, v in enumerate(action_mask) if v == 1]
+obs, reward, terminated, truncated, info = env.step(valid_actions[0])
+
+env.render()
 ```
 
 ---
