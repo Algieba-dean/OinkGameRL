@@ -1,4 +1,4 @@
-# OinkGameRL
+# BoardGameRL
 
 [![CI](https://github.com/Algieba-dean/OinkGameRL/actions/workflows/ci.yml/badge.svg)](https://github.com/Algieba-dean/OinkGameRL/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
@@ -6,17 +6,27 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Algieba-dean/OinkGameRL)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Algieba-dean/OinkGameRL)
 
-This project implements game environments and AI agents for Oink Games using `gymnasium`. It follows modern Python engineering practices, utilizing **uv** for dependency management, **Ruff** for linting, and **Pre-commit** for workflow safety.
+A collection of board game and card game environments for reinforcement learning, built on `gymnasium`. Includes both Oink Games (Japanese tabletop games) and traditional Chinese card games. Follows modern Python engineering practices with **uv** for dependency management, **Ruff** for linting, and **Pre-commit** for workflow safety.
 
 ## Supported Games
 
+### Oink Games (Japanese Tabletop)
+
 | Game           | Status      | Players | Description                                      |
 | -------------- | ----------- | ------- | ------------------------------------------------ |
-| **Scout**      | Implemented | 2-5     | Card game where players build sets and sequences |
-| **Maskmen**    | Planned     | 2-6     | Wrestling card game with hidden roles            |
-| **Kobayakawa** | Planned     | 3-6     | Minimalist betting card game                     |
-| **Startups**   | Planned     | 3-7     | Investment card game                             |
-| **In a Grove** | Planned     | 2-4     | Deduction card game                              |
+| **Scout**      | ✅ Implemented | 2-5     | Card game where players build sets and sequences |
+| **Maskmen**    | ✅ Implemented | 2-6     | Wrestling card game with hidden roles            |
+| **Kobayakawa** | ✅ Implemented | 3-6     | Minimalist betting card game                     |
+| **Startups**   | ✅ Implemented | 3-7     | Investment card game                             |
+| **In a Grove** | ✅ Implemented | 2-4     | Deduction card game                              |
+
+### Chinese Card Games (中式棋牌)
+
+| Game           | Status      | Players | Description                                      |
+| -------------- | ----------- | ------- | ------------------------------------------------ |
+| **Doudizhu (斗地主)** | ✅ Implemented | 3     | Classic Chinese card game with landlord vs peasants |
+| **Guandan (掼蛋)**   | ✅ Implemented | 4     | Team-based card game with level progression      |
+| **Mahjong (麻将)**   | ✅ Implemented | 4     | Traditional tile-based game with chi/pong/gang   |
 
 ## Prerequisites
 
@@ -152,21 +162,26 @@ We use `detect-secrets` to prevent committing API keys or passwords.
 ## Project Structure
 
 ```text
-OinkGameRL/
+BoardGameRL/
 ├── games/                      # Source code for environments and agents
-│   ├── oink_game.py            # Abstract base class for all game environments
+│   ├── board_game.py           # Abstract base class for all game environments
 │   ├── game_agent.py           # Abstract base class for AI agents
+│   ├── registry.py             # Game registry for dynamic game loading
 │   ├── auto_opponent_wrapper.py # Wrapper for multi-agent environments
+│   │
+│   │── # Oink Games
 │   ├── scout/                  # Scout game implementation
-│   │   ├── card/               # Card-related modules
-│   │   ├── game_status/        # Game state management
-│   │   ├── player/             # Player and action modules
-│   │   └── scout_game_env.py   # Main environment
-│   ├── maskmen/                # Maskmen game (planned)
-│   ├── kobayakawa/             # Kobayakawa game (planned)
-│   ├── startups/               # Startups game (planned)
-│   └── in_a_grove/             # In a Grove game (planned)
-├── tests/                      # Pytest test suite
+│   ├── maskmen/                # Maskmen game implementation
+│   ├── kobayakawa/             # Kobayakawa game implementation
+│   ├── startups/               # Startups game implementation
+│   ├── in_a_grove/             # In a Grove game implementation
+│   │
+│   │── # Chinese Card Games
+│   ├── doudizhu/               # Doudizhu (斗地主) implementation
+│   ├── guandan/                # Guandan (掼蛋) implementation
+│   └── mahjong/                # Mahjong (麻将) implementation
+│
+├── tests/                      # Pytest test suite (mirrors games/ structure)
 ├── .github/                    # GitHub Actions CI configuration
 ├── pyproject.toml              # Project configuration & dependencies
 ├── uv.lock                     # Dependency lock file (DO NOT EDIT MANUALLY)
@@ -176,11 +191,27 @@ OinkGameRL/
 
 ## Quick Start
 
+### Using the Game Registry
+
 ```python
-from games.scout.scout_game_env import ScoutGameEnv
+from games.registry import make_env, list_games
+
+# List all available games
+print(list_games())
+# ['scout', 'kobayakawa', 'maskmen', 'startups', 'in_a_grove', 'doudizhu', 'guandan', 'mahjong']
+
+# Create any game environment
+env = make_env("doudizhu", render_mode="ansi")
+obs, info = env.reset(seed=42)
+```
+
+### Playing a Game
+
+```python
+from games.doudizhu.doudizhu_game_env import DoudizhuGameEnv
 
 # Create environment
-env = ScoutGameEnv(player_num=4, render_mode="human")
+env = DoudizhuGameEnv(render_mode="human")
 
 # Reset and play
 obs, info = env.reset(seed=42)
@@ -191,6 +222,25 @@ valid_actions = [i for i, v in enumerate(action_mask) if v == 1]
 obs, reward, terminated, truncated, info = env.step(valid_actions[0])
 
 env.render()
+```
+
+### Environment Interface
+
+All game environments inherit from `BoardGameEnv` and provide:
+
+```python
+# Properties
+env.num_players      # Number of players
+env.current_player_idx  # Current player's turn
+
+# Methods
+obs, info = env.reset(seed=42)  # Reset game
+obs, reward, done, truncated, info = env.step(action)  # Take action
+env.render()  # Display game state
+
+# Info dict contains:
+info["action_mask"]   # Valid actions for current player
+info["global_state"]  # Full game state (for debugging/analysis)
 ```
 
 ---
