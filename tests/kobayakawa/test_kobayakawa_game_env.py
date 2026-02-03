@@ -4,20 +4,20 @@ import gymnasium as gym
 import numpy as np
 import pytest
 
+from games.board_game import BoardGameEnv
 from games.kobayakawa.constants import PlayerConsts
 from games.kobayakawa.kobayakawa_game_env import KobayakawaGameEnv
-from games.oink_game import OinkGameEnv
 
 
 class TestKobayakawaContract:
-    """Test KobayakawaGameEnv adheres to OinkGameEnv contract."""
+    """Test KobayakawaGameEnv adheres to BoardGameEnv contract."""
 
     @pytest.fixture
     def env(self) -> KobayakawaGameEnv:
         return KobayakawaGameEnv(player_num=4)
 
-    def test_is_oink_game_env(self, env):
-        assert isinstance(env, OinkGameEnv)
+    def test_is_board_game_env(self, env):
+        assert isinstance(env, BoardGameEnv)
 
     def test_is_gym_env(self, env):
         assert isinstance(env, gym.Env)

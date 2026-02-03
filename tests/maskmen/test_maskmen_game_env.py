@@ -4,20 +4,20 @@ import gymnasium as gym
 import numpy as np
 import pytest
 
+from games.board_game import BoardGameEnv
 from games.maskmen.constants import PlayerConsts
 from games.maskmen.maskmen_game_env import MaskmenGameEnv
-from games.oink_game import OinkGameEnv
 
 
 class TestMaskmenGameEnvContract:
-    """Test MaskmenGameEnv adheres to OinkGameEnv contract."""
+    """Test MaskmenGameEnv adheres to BoardGameEnv contract."""
 
     @pytest.fixture
     def env(self) -> MaskmenGameEnv:
         return MaskmenGameEnv(player_num=4)
 
-    def test_is_oink_game_env(self, env):
-        assert isinstance(env, OinkGameEnv)
+    def test_is_board_game_env(self, env):
+        assert isinstance(env, BoardGameEnv)
 
     def test_is_gym_env(self, env):
         assert isinstance(env, gym.Env)

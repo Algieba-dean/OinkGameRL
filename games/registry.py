@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from games.oink_game import OinkGameEnv
+    from games.board_game import BoardGameEnv
 
-_GAME_REGISTRY: dict[str, type[OinkGameEnv]] = {}
+_GAME_REGISTRY: dict[str, type[BoardGameEnv]] = {}
 
 
 def register_game(name: str):
@@ -18,11 +18,11 @@ def register_game(name: str):
 
     Example:
         @register_game("scout")
-        class ScoutGameEnv(OinkGameEnv):
+        class ScoutGameEnv(BoardGameEnv):
             ...
     """
 
-    def decorator(cls: type[OinkGameEnv]) -> type[OinkGameEnv]:
+    def decorator(cls: type[BoardGameEnv]) -> type[BoardGameEnv]:
         if name in _GAME_REGISTRY:
             raise ValueError(f"Game '{name}' is already registered")
         _GAME_REGISTRY[name] = cls
@@ -31,7 +31,7 @@ def register_game(name: str):
     return decorator
 
 
-def get_game(name: str) -> type[OinkGameEnv]:
+def get_game(name: str) -> type[BoardGameEnv]:
     """Get a game environment class by name.
 
     Args:
@@ -59,7 +59,7 @@ def list_games() -> list[str]:
     return list(_GAME_REGISTRY.keys())
 
 
-def make_env(name: str, **kwargs) -> OinkGameEnv:
+def make_env(name: str, **kwargs) -> BoardGameEnv:
     """Create a game environment instance by name.
 
     Args:

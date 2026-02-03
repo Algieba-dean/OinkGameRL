@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
-from games.oink_game import OinkGameEnv
+from games.board_game import BoardGameEnv
 from games.registry import register_game
 from games.scout.card.dealer import Dealer
 from games.scout.card.playable_checker import PlayableChecker
@@ -14,7 +14,7 @@ from games.scout.player.action import PlayAction, ScoutAction, ScoutPlayAction
 
 
 @register_game("scout")
-class ScoutGameEnv(OinkGameEnv):
+class ScoutGameEnv(BoardGameEnv):
     """Scout card game environment implementing the OinkGameEnv interface.
 
     Action space encoding:

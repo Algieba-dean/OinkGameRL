@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING, Any, cast
 import gymnasium as gym
 
 if TYPE_CHECKING:  # pragma: no cover
+    from games.board_game import BoardGameEnv
     from games.game_agent import GameAgent
-    from games.oink_game import OinkGameEnv
 
 
 class AutoOpponentWrapper(gym.Wrapper):
-    env: OinkGameEnv  # just use to pass MyPy check
+    env: BoardGameEnv  # just use to pass MyPy check
 
     def __init__(
-        self, env: OinkGameEnv, bots: dict[int, GameAgent], ego_player_idx: int = 0
+        self, env: BoardGameEnv, bots: dict[int, GameAgent], ego_player_idx: int = 0
     ) -> None:
         super().__init__(env)
         self.__bots: dict[int, GameAgent] = bots
@@ -24,15 +24,15 @@ class AutoOpponentWrapper(gym.Wrapper):
             )
 
     @property
-    def _unwrapped_env(self) -> OinkGameEnv:
+    def _unwrapped_env(self) -> BoardGameEnv:
         """
-        a specific attribution to as for AutoOpponentWrapper, the env will be OinkGameEnv
+        a specific attribution to as for AutoOpponentWrapper, the env will be BoardGameEnv
         """
-        from games.oink_game import (
-            OinkGameEnv,
+        from games.board_game import (
+            BoardGameEnv,
         )  # we have to do such a lazy import to pass ruff check
 
-        return cast(OinkGameEnv, self.env.unwrapped)
+        return cast(BoardGameEnv, self.env.unwrapped)
 
     @property
     def ego_player_idx(self) -> int:
