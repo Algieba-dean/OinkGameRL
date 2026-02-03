@@ -1,7 +1,7 @@
 [project]
-name = "oink-games"
+name = "board-games"
 version = "0.1.0"
-description = "Try to simulate oink games for RL"
+description = "Board game environments for reinforcement learning, including Oink Games and Chinese card games"
 readme = "README.md"
 requires-python = ">=3.12"
 

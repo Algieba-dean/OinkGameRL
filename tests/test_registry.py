@@ -2,7 +2,7 @@
 
 import pytest
 
-from games.oink_game import OinkGameEnv
+from games.board_game import BoardGameEnv
 from games.registry import (
     _GAME_REGISTRY,
     get_game,
@@ -20,7 +20,7 @@ class TestRegisterGame:
         original_registry = _GAME_REGISTRY.copy()
 
         @register_game("test_game_1")
-        class TestGame1(OinkGameEnv):
+        class TestGame1(BoardGameEnv):
             pass
 
         assert "test_game_1" in _GAME_REGISTRY
@@ -34,13 +34,13 @@ class TestRegisterGame:
         original_registry = _GAME_REGISTRY.copy()
 
         @register_game("test_game_dup")
-        class TestGameDup1(OinkGameEnv):
+        class TestGameDup1(BoardGameEnv):
             pass
 
         with pytest.raises(ValueError, match="already registered"):
 
             @register_game("test_game_dup")
-            class TestGameDup2(OinkGameEnv):
+            class TestGameDup2(BoardGameEnv):
                 pass
 
         _GAME_REGISTRY.clear()
@@ -55,7 +55,7 @@ class TestGetGame:
         original_registry = _GAME_REGISTRY.copy()
 
         @register_game("test_get_game")
-        class TestGetGameEnv(OinkGameEnv):
+        class TestGetGameEnv(BoardGameEnv):
             pass
 
         result = get_game("test_get_game")
@@ -79,11 +79,11 @@ class TestListGames:
         _GAME_REGISTRY.clear()
 
         @register_game("game_a")
-        class GameA(OinkGameEnv):
+        class GameA(BoardGameEnv):
             pass
 
         @register_game("game_b")
-        class GameB(OinkGameEnv):
+        class GameB(BoardGameEnv):
             pass
 
         result = list_games()

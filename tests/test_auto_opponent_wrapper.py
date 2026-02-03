@@ -5,11 +5,11 @@ import gymnasium as gym
 import pytest
 
 from games.auto_opponent_wrapper import AutoOpponentWrapper
+from games.board_game import BoardGameEnv
 from games.game_agent import GameAgent
-from games.oink_game import OinkGameEnv
 
 
-class ScriptedEnv(OinkGameEnv):
+class ScriptedEnv(BoardGameEnv):
     def __init__(
         self,
         player_sequence: list[int],
@@ -143,8 +143,8 @@ class TestWrapperContract:
 
     def test_unwappered_env_is_oink_game_env(self, game_builder):
         wrapper, _, _ = game_builder(player_seq=[0, 1], bot_indices=[1])
-        # as for AutoOpponentWrapper the env should be OinkGameEnv
-        assert isinstance(wrapper.env.unwrapped, OinkGameEnv)
+        # as for AutoOpponentWrapper the env should be BoardGameEnv
+        assert isinstance(wrapper.env.unwrapped, BoardGameEnv)
 
     def test_property_immutability(self, game_builder):
         # Use builder to quickly create a minimal viable environment

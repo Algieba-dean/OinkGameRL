@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
-from games.oink_game import OinkGameEnv
+from games.board_game import BoardGameEnv
 from games.registry import register_game
 from games.startups.constants import CardConsts, PlayerConsts
 from games.startups.enums import Company
@@ -13,7 +13,7 @@ from games.startups.game_state import GameState
 
 
 @register_game("startups")
-class StartupsGameEnv(OinkGameEnv):
+class StartupsGameEnv(BoardGameEnv):
     """Startups card game environment.
 
     Players invest in startup companies by playing and taking cards.

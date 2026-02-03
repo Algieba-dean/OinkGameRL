@@ -5,16 +5,16 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from games.board_game import BoardGameEnv
 from games.maskmen.constants import PlayerConsts
 from games.maskmen.dealer import Dealer
 from games.maskmen.enums import CardColor
 from games.maskmen.game_state import GameState
-from games.oink_game import OinkGameEnv
 from games.registry import register_game
 
 
 @register_game("maskmen")
-class MaskmenGameEnv(OinkGameEnv):
+class MaskmenGameEnv(BoardGameEnv):
     """Maskmen card game environment.
 
     Players collect sets of colored cards. First to collect 3 sets wins.

@@ -5,15 +5,15 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from games.board_game import BoardGameEnv
 from games.kobayakawa.constants import CardConsts, PlayerConsts
 from games.kobayakawa.enums import ActionType, GamePhase
 from games.kobayakawa.game_state import GameState
-from games.oink_game import OinkGameEnv
 from games.registry import register_game
 
 
 @register_game("kobayakawa")
-class KobayakawaGameEnv(OinkGameEnv):
+class KobayakawaGameEnv(BoardGameEnv):
     """Kobayakawa card game environment.
 
     A minimalist betting game where players have one card.

@@ -5,15 +5,15 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from games.board_game import BoardGameEnv
 from games.in_a_grove.constants import PlayerConsts
 from games.in_a_grove.enums import GamePhase, TileType
 from games.in_a_grove.game_state import GameState
-from games.oink_game import OinkGameEnv
 from games.registry import register_game
 
 
 @register_game("in_a_grove")
-class InAGroveGameEnv(OinkGameEnv):
+class InAGroveGameEnv(BoardGameEnv):
     """In a Grove deduction game environment.
 
     Players deduce who is the culprit, witness, or accomplice.
