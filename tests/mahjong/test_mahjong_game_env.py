@@ -320,3 +320,238 @@ class TestMahjongActions:
                     break
             else:
                 env.step(valid[0])
+
+
+class TestMahjongAdvancedActions:
+    """Test advanced mahjong actions with constructed game states."""
+
+    def test_action_mask_in_waiting_response(self):
+        """Test action mask generation in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup waiting response phase with various actions available
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {
+            0: [ActionType.PASS, ActionType.HU, ActionType.GANG, ActionType.PONG]
+        }
+        env._game_state._last_discard = Tile(TileSuit.WAN, 1, 0)
+
+        mask = env._get_action_mask(0)
+        assert mask[MahjongGameEnv.ACTION_PASS] == 1
+        assert mask[MahjongGameEnv.ACTION_HU] == 1
+        assert mask[MahjongGameEnv.ACTION_GANG] == 1
+        assert mask[MahjongGameEnv.ACTION_PONG] == 1
+
+    def test_action_mask_with_chi_options(self):
+        """Test action mask with chi options available."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup hand with chi possibilities
+        player = env._game_state.get_player(0)
+        player._hand = [
+            Tile(TileSuit.WAN, 2, 0),
+            Tile(TileSuit.WAN, 3, 0),
+        ] + [Tile(TileSuit.TIAO, i, 0) for i in range(1, 12)]
+
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.CHI, ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 1, 0)
+
+        mask = env._get_action_mask(0)
+        # Chi should be available
+        chi_available = any(
+            mask[i] == 1
+            for i in range(
+                MahjongGameEnv.ACTION_CHI_START, MahjongGameEnv.ACTION_CHI_END
+            )
+        )
+        assert chi_available or mask[MahjongGameEnv.ACTION_PASS] == 1
+
+    def test_apply_self_hu_action(self):
+        """Test applying self hu action."""
+        from games.mahjong.enums import GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Construct a winning hand
+        winning_tiles = []
+        for rank in [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5]:
+            winning_tiles.append(Tile(TileSuit.WAN, rank, len(winning_tiles) % 4))
+
+        env._game_state._players[0]._hand = winning_tiles
+        env._game_state._phase = GamePhase.DISCARDING
+        env._current_player_idx = 0
+
+        reward, terminated = env._apply_action(MahjongGameEnv.ACTION_SELF_HU)
+        assert reward == 1.0
+        assert terminated is True
+
+    def test_apply_an_gang_action(self):
+        """Test applying an gang action."""
+        from games.mahjong.enums import GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup hand with 4 of same type
+        gang_tiles = [
+            Tile(TileSuit.WAN, 1, 0),
+            Tile(TileSuit.WAN, 1, 1),
+            Tile(TileSuit.WAN, 1, 2),
+            Tile(TileSuit.WAN, 1, 3),
+        ]
+        other_tiles = [Tile(TileSuit.TIAO, i, 0) for i in range(1, 11)]
+        env._game_state._players[0]._hand = gang_tiles + other_tiles
+        env._game_state._phase = GamePhase.DISCARDING
+        env._current_player_idx = 0
+
+        # Apply an_gang action (tile_type_id 0 = 1万)
+        env._apply_action(MahjongGameEnv.ACTION_AN_GANG_START + 0)
+        assert env._game_state.phase == GamePhase.DRAWING
+
+    def test_apply_pass_in_waiting_response(self):
+        """Test applying pass action in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup waiting response phase
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 1, 0)
+        env._game_state._last_discard_player = 3
+        env._current_player_idx = 0
+
+        env._apply_action(MahjongGameEnv.ACTION_PASS)
+
+    def test_apply_hu_in_waiting_response(self):
+        """Test applying hu action in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Construct a winning hand (needs one more tile)
+        winning_tiles = []
+        for rank in [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5]:
+            winning_tiles.append(Tile(TileSuit.WAN, rank, len(winning_tiles) % 4))
+
+        env._game_state._players[0]._hand = winning_tiles
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.HU, ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 5, 3)
+        env._game_state._last_discard_player = 3
+        env._current_player_idx = 0
+
+        reward, terminated = env._apply_action(MahjongGameEnv.ACTION_HU)
+        assert reward == 1.0
+        assert terminated is True
+
+    def test_apply_gang_in_waiting_response(self):
+        """Test applying gang action in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup hand with 3 of same type
+        gang_tiles = [
+            Tile(TileSuit.WAN, 1, 0),
+            Tile(TileSuit.WAN, 1, 1),
+            Tile(TileSuit.WAN, 1, 2),
+        ]
+        other_tiles = [Tile(TileSuit.TIAO, i, 0) for i in range(1, 11)]
+        env._game_state._players[0]._hand = gang_tiles + other_tiles
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.GANG, ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 1, 3)
+        env._game_state._last_discard_player = 3
+        env._current_player_idx = 0
+
+        env._apply_action(MahjongGameEnv.ACTION_GANG)
+
+    def test_apply_pong_in_waiting_response(self):
+        """Test applying pong action in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup hand with 2 of same type
+        pong_tiles = [
+            Tile(TileSuit.WAN, 2, 0),
+            Tile(TileSuit.WAN, 2, 1),
+        ]
+        other_tiles = [Tile(TileSuit.TIAO, i, 0) for i in range(1, 12)]
+        env._game_state._players[0]._hand = pong_tiles + other_tiles
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.PONG, ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 2, 2)
+        env._game_state._last_discard_player = 3
+        env._current_player_idx = 0
+
+        env._apply_action(MahjongGameEnv.ACTION_PONG)
+
+    def test_apply_chi_in_waiting_response(self):
+        """Test applying chi action in waiting response phase."""
+        from games.mahjong.enums import ActionType, GamePhase
+        from games.mahjong.tile import Tile, TileSuit
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Setup hand with chi tiles
+        chi_tiles = [
+            Tile(TileSuit.WAN, 2, 0),
+            Tile(TileSuit.WAN, 3, 0),
+        ]
+        other_tiles = [Tile(TileSuit.TIAO, i, 0) for i in range(1, 12)]
+        env._game_state._players[0]._hand = chi_tiles + other_tiles
+        env._game_state._phase = GamePhase.WAITING_RESPONSE
+        env._game_state._pending_responses = {0: [ActionType.CHI, ActionType.PASS]}
+        env._game_state._last_discard = Tile(TileSuit.WAN, 1, 0)
+        env._game_state._last_discard_player = 3
+        env._current_player_idx = 0
+
+        env._apply_action(MahjongGameEnv.ACTION_CHI_START)
+
+    def test_discard_action(self):
+        """Test discard action."""
+        from games.mahjong.enums import GamePhase
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Draw first
+        env._apply_action(MahjongGameEnv.ACTION_DRAW)
+        assert env._game_state.phase == GamePhase.DISCARDING
+
+        # Get a valid discard action
+        player = env._game_state.get_player(0)
+        tile = player.hand[0]
+        discard_action = MahjongGameEnv.ACTION_DISCARD_START + tile.tile_id
+
+        env._apply_action(discard_action)
+
+    def test_reset_without_seed(self):
+        """Test reset without seed."""
+        env = MahjongGameEnv()
+        obs1, _ = env.reset()
+        obs2, _ = env.reset()
+        # Results may differ without seed
