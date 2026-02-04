@@ -119,3 +119,71 @@ class TestEdgeCases:
     def test_relative_score_single_player(self):
         rewards = RewardShaping.relative_score_reward([100])
         assert rewards[0] == 0.0
+
+
+class TestPBRS:
+    """Test Potential-Based Reward Shaping (PBRS)."""
+
+    def test_pbrs_basic(self):
+        r_env = 0.0
+        phi_current = 0.5
+        phi_next = 0.8
+        gamma = 0.99
+        r_shaped = RewardShaping.pbrs(
+            env_reward=r_env,
+            potential_current=phi_current,
+            potential_next=phi_next,
+            gamma=gamma,
+        )
+        expected = r_env + gamma * phi_next - phi_current
+        assert abs(r_shaped - expected) < 1e-6
+
+    def test_pbrs_terminal_state(self):
+        r_shaped = RewardShaping.pbrs(
+            env_reward=1.0,
+            potential_current=0.5,
+            potential_next=0.0,
+            gamma=0.99,
+        )
+        expected = 1.0 + 0.99 * 0.0 - 0.5
+        assert abs(r_shaped - expected) < 1e-6
+
+    def test_pbrs_positive_shaping(self):
+        r_shaped = RewardShaping.pbrs(
+            env_reward=0.0,
+            potential_current=0.2,
+            potential_next=0.8,
+            gamma=1.0,
+        )
+        assert r_shaped > 0
+
+    def test_pbrs_negative_shaping(self):
+        r_shaped = RewardShaping.pbrs(
+            env_reward=0.0,
+            potential_current=0.8,
+            potential_next=0.2,
+            gamma=1.0,
+        )
+        assert r_shaped < 0
+
+
+class TestCurriculumReward:
+    """Test curriculum learning reward blending."""
+
+    def test_blend_dense_only(self):
+        blended = RewardShaping.curriculum_blend(
+            dense_reward=1.0, sparse_reward=0.0, alpha=1.0
+        )
+        assert blended == 1.0
+
+    def test_blend_sparse_only(self):
+        blended = RewardShaping.curriculum_blend(
+            dense_reward=1.0, sparse_reward=0.5, alpha=0.0
+        )
+        assert blended == 0.5
+
+    def test_blend_mixed(self):
+        blended = RewardShaping.curriculum_blend(
+            dense_reward=1.0, sparse_reward=0.0, alpha=0.5
+        )
+        assert blended == 0.5

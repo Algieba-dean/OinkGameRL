@@ -141,16 +141,26 @@ class BasePlayer[T](ABC):
                 played.append(piece)
         return played
 
+    @abstractmethod
     def _sort_hand(self, pieces: list[T]) -> list[T]:
-        """Sort the hand. Override for custom sorting.
+        """Sort the hand. Must be implemented by subclasses.
+
+        Different games have different sorting requirements:
+        - Doudizhu: Sort by rank (3-2-Joker)
+        - Scout: May preserve insertion order
+        - Mahjong: Sort by suit then value
 
         Args:
             pieces: List of pieces to sort.
 
         Returns:
             Sorted list of pieces.
+
+        Example:
+            def _sort_hand(self, pieces: list[Card]) -> list[Card]:
+                return sorted(pieces, key=lambda c: (c.suit, c.rank))
         """
-        return sorted(pieces)  # type: ignore[type-var]
+        ...
 
     @abstractmethod
     def reset(self) -> None:
