@@ -205,3 +205,54 @@ class TestGameStateEdgeCases:
         rng = np.random.default_rng(42)
         state.reset(rng)
         assert state.last_play_info is None
+
+    def test_skip_finished_player(self):
+        """Test that finished players are skipped."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Mark player 1 as finished
+        state._players[1]._finished = True
+        state._players[1]._finish_order = 1
+
+        # Player 0 plays
+        player0 = state.get_player(0)
+        state.play([player0.hand[0]])
+
+        # Should skip player 1 and go to player 2
+        assert state.current_player_idx == 2
+
+    def test_cannot_pass_own_play(self):
+        """Test that player cannot pass their own play."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Player 0 plays
+        player0 = state.get_player(0)
+        state.play([player0.hand[0]])
+
+        # All others pass
+        state.play([])  # Player 1
+        state.play([])  # Player 2
+        state.play([])  # Player 3
+
+        # Now player 0 cannot pass (must play)
+        result = state.play([])
+        assert result is False
+
+    def test_play_invalid_hand_type(self):
+        """Test playing invalid hand type."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Try to play two different cards (invalid)
+        player = state.get_player(0)
+        if player.hand_count >= 2:
+            card1 = player.hand[0]
+            card2 = player.hand[1]
+            if card1.rank != card2.rank:
+                result = state.play([card1, card2])
+                assert result is False
