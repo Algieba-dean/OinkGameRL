@@ -251,3 +251,48 @@ class TestScoutPlayAction:
         assert player.hand_count == original_hand_count
         assert player.scout_and_show_token is False
         assert game_state_fixture.board.owner_idx == 0
+
+
+class TestPlayActionEdgeCases:
+    """Test edge cases for PlayAction."""
+
+    def test_play_action_start_greater_than_end(self, game_state_fixture):
+        """Test that start_idx > end_idx is invalid."""
+        action = PlayAction(start_idx=5, end_idx=2)
+        assert action.is_valid(game_state=game_state_fixture) is False
+
+    def test_play_action_execute_not_game_state(self):
+        """Test that execute raises error for non-GameState."""
+        action = PlayAction(start_idx=0, end_idx=0)
+        with pytest.raises(NotImplementedError):
+            action.execute(game_state=GameStates())
+
+
+class TestScoutActionEdgeCases:
+    """Test edge cases for ScoutAction."""
+
+    def test_scout_action_execute_not_game_state(self):
+        """Test that execute raises error for non-GameState."""
+        action = ScoutAction(
+            scout_position=ScoutPosition.LEFT,
+            insert_position=0,
+            scout_flip=ScoutFlip.NO,
+        )
+        with pytest.raises(NotImplementedError):
+            action.execute(game_state=GameStates())
+
+
+class TestScoutPlayActionEdgeCases:
+    """Test edge cases for ScoutPlayAction."""
+
+    def test_scout_play_action_execute_not_game_state(self):
+        """Test that execute raises error for non-GameState."""
+        action = ScoutPlayAction(
+            scout_position=ScoutPosition.LEFT,
+            insert_position=0,
+            scout_flip=ScoutFlip.NO,
+            play_start_idx=0,
+            play_end_idx=0,
+        )
+        with pytest.raises(NotImplementedError):
+            action.execute(game_state=GameStates())
