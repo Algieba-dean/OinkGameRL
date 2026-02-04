@@ -159,3 +159,64 @@ class RewardShaping:
             The step reward.
         """
         return success_reward if action_success else failure_reward
+
+    @staticmethod
+    def pbrs(
+        env_reward: float,
+        potential_current: float,
+        potential_next: float,
+        gamma: float = 0.99,
+    ) -> float:
+        """Compute Potential-Based Reward Shaping (PBRS).
+
+        PBRS is theoretically guaranteed to not change the optimal policy.
+        Formula: R_shaped = R_env + gamma * Phi(S_next) - Phi(S_current)
+
+        Args:
+            env_reward: The original environment reward.
+            potential_current: Potential function value for current state.
+            potential_next: Potential function value for next state.
+                Should be 0 for terminal states.
+            gamma: Discount factor (should match RL algorithm's gamma).
+
+        Returns:
+            The shaped reward.
+
+        Example:
+            # Define a potential function for hand quality
+            def hand_potential(hand: list[Card]) -> float:
+                return count_consecutive_cards(hand) / max_hand_size
+
+            # In step():
+            phi_current = hand_potential(old_hand)
+            phi_next = hand_potential(new_hand) if not terminated else 0.0
+            shaped_reward = RewardShaping.pbrs(reward, phi_current, phi_next)
+        """
+        return env_reward + gamma * potential_next - potential_current
+
+    @staticmethod
+    def curriculum_blend(
+        dense_reward: float,
+        sparse_reward: float,
+        alpha: float,
+    ) -> float:
+        """Blend dense and sparse rewards for curriculum learning.
+
+        Start training with alpha=1.0 (dense rewards) and gradually
+        decrease to alpha=0.0 (sparse rewards only).
+
+        Args:
+            dense_reward: Dense reward (e.g., step-by-step shaping).
+            sparse_reward: Sparse reward (e.g., win/lose at end).
+            alpha: Blending factor in [0, 1]. 1.0 = all dense, 0.0 = all sparse.
+
+        Returns:
+            Blended reward: alpha * dense + (1 - alpha) * sparse
+
+        Example:
+            # Training schedule
+            for epoch in range(num_epochs):
+                alpha = max(0.0, 1.0 - epoch / warmup_epochs)
+                reward = RewardShaping.curriculum_blend(dense, sparse, alpha)
+        """
+        return alpha * dense_reward + (1 - alpha) * sparse_reward

@@ -145,7 +145,24 @@ class BoardGameEnv(ABC, gym.Env):
 
         Returns:
             Tuple of (observation, info) for the first player.
+
+        Raises:
+            AssertionError: If observation_space or action_space not initialized.
         """
+        # Validate that subclass has initialized spaces
+        assert hasattr(
+            self, "observation_space"
+        ), "observation_space must be initialized in subclass __init__"
+        assert (
+            self.observation_space is not None
+        ), "observation_space must be initialized in subclass __init__"
+        assert hasattr(
+            self, "action_space"
+        ), "action_space must be initialized in subclass __init__"
+        assert (
+            self.action_space is not None
+        ), "action_space must be initialized in subclass __init__"
+
         super().reset(seed=seed, options=options)
         self._current_step = 0
         self._reset_logic(seed=seed, options=options)

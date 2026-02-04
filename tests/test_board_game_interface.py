@@ -156,6 +156,72 @@ class TestEnvInAgentUsage:
         }
 
 
+class TestSpaceValidation:
+    """Test that spaces must be initialized."""
+
+    def test_missing_observation_space_raises(self):
+        """Test that missing observation_space raises error on reset."""
+
+        class BadEnv(BoardGameEnv):
+            def __init__(self):
+                super().__init__()
+                self.action_space = gym.spaces.Discrete(2)
+                # Missing observation_space
+
+            def _apply_action(self, action):
+                return 0.0, False
+
+            def _get_action_mask(self, player_idx):
+                return [1, 1]
+
+            def _get_global_state(self):
+                return {}
+
+            def _get_observation(self, player_idx):
+                return 0
+
+            def _reset_logic(self, seed, options):
+                pass
+
+            def _render_text(self):
+                return ""
+
+        env = BadEnv()
+        with pytest.raises(AssertionError, match="observation_space"):
+            env.reset()
+
+    def test_missing_action_space_raises(self):
+        """Test that missing action_space raises error on reset."""
+
+        class BadEnv(BoardGameEnv):
+            def __init__(self):
+                super().__init__()
+                self.observation_space = gym.spaces.Discrete(10)
+                # Missing action_space
+
+            def _apply_action(self, action):
+                return 0.0, False
+
+            def _get_action_mask(self, player_idx):
+                return [1, 1]
+
+            def _get_global_state(self):
+                return {}
+
+            def _get_observation(self, player_idx):
+                return 0
+
+            def _reset_logic(self, seed, options):
+                pass
+
+            def _render_text(self):
+                return ""
+
+        env = BadEnv()
+        with pytest.raises(AssertionError, match="action_space"):
+            env.reset()
+
+
 class TestTruncation:
     """Test truncation (max_steps) functionality."""
 

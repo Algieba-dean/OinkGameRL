@@ -6,7 +6,10 @@ from games.core.base_player import BasePlayer
 
 
 class ConcretePlayer(BasePlayer[int]):
-    """Concrete implementation for testing."""
+    """Concrete implementation for testing with default ascending sort."""
+
+    def _sort_hand(self, pieces: list[int]) -> list[int]:
+        return sorted(pieces)
 
     def reset(self) -> None:
         self._hand = []
@@ -85,3 +88,59 @@ class TestBasePlayer:
         player.set_hand([1, 2, 3])
         player.reset()
         assert player.hand == []
+
+
+class CustomSortPlayer(BasePlayer[int]):
+    """Player with custom sorting (descending)."""
+
+    def _sort_hand(self, pieces: list[int]) -> list[int]:
+        return sorted(pieces, reverse=True)
+
+    def reset(self) -> None:
+        self._hand = []
+
+
+class TestCustomSorting:
+    """Test custom sorting functionality."""
+
+    def test_custom_sort_descending(self):
+        player = CustomSortPlayer(0)
+        player.set_hand([1, 3, 2])
+        assert player.hand == [3, 2, 1]
+
+    def test_custom_sort_on_add(self):
+        player = CustomSortPlayer(0)
+        player.set_hand([3, 1])
+        player.add_piece(2)
+        assert player.hand == [3, 2, 1]
+
+    def test_custom_sort_on_add_pieces(self):
+        player = CustomSortPlayer(0)
+        player.set_hand([5])
+        player.add_pieces([1, 3])
+        assert player.hand == [5, 3, 1]
+
+
+class NoSortPlayer(BasePlayer[int]):
+    """Player that preserves insertion order (no sorting)."""
+
+    def _sort_hand(self, pieces: list[int]) -> list[int]:
+        return pieces  # No sorting
+
+    def reset(self) -> None:
+        self._hand = []
+
+
+class TestNoSorting:
+    """Test player that doesn't sort."""
+
+    def test_no_sort_preserves_order(self):
+        player = NoSortPlayer(0)
+        player.set_hand([3, 1, 2])
+        assert player.hand == [3, 1, 2]
+
+    def test_no_sort_on_add(self):
+        player = NoSortPlayer(0)
+        player.set_hand([3, 1])
+        player.add_piece(2)
+        assert player.hand == [3, 1, 2]
