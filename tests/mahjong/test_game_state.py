@@ -190,3 +190,48 @@ class TestGameStateTermination:
                     state.respond(player_idx, ActionType.PASS)
 
         assert state.is_terminated or state.wall_count == 0
+
+
+class TestAdvancedResponses:
+    """Test advanced response actions."""
+
+    def test_respond_not_in_pending(self):
+        """Test responding when player is not in pending responses."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.draw_tile()
+        player = state.get_player(0)
+        state.discard_tile(player.hand[0])
+
+        if state.phase == GamePhase.WAITING_RESPONSE:
+            # Try to respond with a player not in pending
+            result = state.respond(0, ActionType.PASS)  # Player 0 discarded
+            assert result is False
+
+    def test_respond_invalid_action(self):
+        """Test responding with invalid action type."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.draw_tile()
+        player = state.get_player(0)
+        state.discard_tile(player.hand[0])
+
+        if state.phase == GamePhase.WAITING_RESPONSE:
+            for player_idx in list(state._pending_responses.keys()):
+                # Try invalid action (CHI without tiles)
+                assert state.respond(player_idx, ActionType.CHI, tiles=None) is False
+                break
+
+    def test_draw_from_empty_wall(self):
+        """Test drawing when wall is empty."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Empty the wall
+        state._wall = []
+        tile = state.draw_tile()
+        assert tile is None
+        assert state.is_terminated
