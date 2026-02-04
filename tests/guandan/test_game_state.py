@@ -271,3 +271,34 @@ class TestGameStateEdgeCases:
         result = state.play([])
         assert result is True
         # Current player should have advanced past player 0
+
+    def test_get_winner_team_team_b_wins(self):
+        """Test get_winner_team when Team B wins."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Force game to finished with Team B winning
+        from games.guandan.enums import GamePhase, Team
+
+        state._phase = GamePhase.FINISHED
+        state._team_scores[Team.TEAM_A] = 0
+        state._team_scores[Team.TEAM_B] = 10
+
+        winner = state.get_winner_team()
+        assert winner == Team.TEAM_B
+
+    def test_play_invalid_hand_type_returns_false(self):
+        """Test that playing invalid hand type returns False."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Find two cards with different ranks to create invalid hand
+        player = state.get_player(0)
+        for i, c1 in enumerate(player.hand):
+            for c2 in player.hand[i + 1 :]:
+                if c1.rank != c2.rank:
+                    result = state.play([c1, c2])
+                    assert result is False
+                    return
