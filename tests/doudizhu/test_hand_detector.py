@@ -359,3 +359,21 @@ class TestHandDetectorStraightEdgeCases:
         rank_counts = Counter({CardRank.THREE: 2, CardRank.FOUR: 2})
         result = HandDetector._get_rank_with_count(rank_counts, 3)
         assert result == -1
+
+    def test_airplane_invalid_remaining_cards(self):
+        """Test airplane with invalid number of remaining cards."""
+        # Two consecutive triples (6 cards) + 3 extra cards (not matching singles or pairs)
+        cards = [
+            Card(CardRank.THREE, CardSuit.SPADE),
+            Card(CardRank.THREE, CardSuit.HEART),
+            Card(CardRank.THREE, CardSuit.CLUB),
+            Card(CardRank.FOUR, CardSuit.SPADE),
+            Card(CardRank.FOUR, CardSuit.HEART),
+            Card(CardRank.FOUR, CardSuit.CLUB),
+            Card(CardRank.FIVE, CardSuit.SPADE),
+            Card(CardRank.SIX, CardSuit.HEART),
+            Card(CardRank.SEVEN, CardSuit.CLUB),
+        ]
+        info = HandDetector.detect(cards)
+        # 6 cards for triples + 3 extra (not 2 singles, not 4 pairs)
+        assert info.hand_type == HandType.INVALID

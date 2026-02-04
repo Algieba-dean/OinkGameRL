@@ -239,3 +239,81 @@ class TestHandDetectorLevelCard:
         ]
         info = HandDetector.detect(cards, CardRank.FIVE)
         assert info.hand_type == HandType.INVALID
+
+
+class TestHandInfoEdgeCases:
+    """Test edge cases for HandInfo."""
+
+    def test_nothing_beats_rocket(self):
+        """Test that nothing beats rocket."""
+        rocket = HandInfo(HandType.ROCKET, 100, 4)
+        bomb8 = HandInfo(HandType.BOMB_8, 14, 1)
+        assert not bomb8.can_beat(rocket)
+
+    def test_non_bomb_cannot_beat_bomb(self):
+        """Test that non-bomb cannot beat bomb."""
+        bomb = HandInfo(HandType.BOMB_4, 5, 1)
+        single = HandInfo(HandType.SINGLE, 14, 1)
+        assert not single.can_beat(bomb)
+
+    def test_same_bomb_type_higher_rank_wins(self):
+        """Test same bomb type comparison by rank."""
+        bomb_high = HandInfo(HandType.BOMB_4, 10, 1)
+        bomb_low = HandInfo(HandType.BOMB_4, 5, 1)
+        assert bomb_high.can_beat(bomb_low)
+        assert not bomb_low.can_beat(bomb_high)
+
+
+class TestHandDetectorBombsExtended:
+    """Test extended bomb detection."""
+
+    def test_bomb_7(self):
+        """Test 7-card bomb detection."""
+        cards = [
+            Card(CardRank.EIGHT, CardSuit.SPADE, 0),
+            Card(CardRank.EIGHT, CardSuit.HEART, 0),
+            Card(CardRank.EIGHT, CardSuit.CLUB, 0),
+            Card(CardRank.EIGHT, CardSuit.DIAMOND, 0),
+            Card(CardRank.EIGHT, CardSuit.SPADE, 1),
+            Card(CardRank.EIGHT, CardSuit.HEART, 1),
+            Card(CardRank.EIGHT, CardSuit.CLUB, 1),
+        ]
+        info = HandDetector.detect(cards)
+        assert info.hand_type == HandType.BOMB_7
+
+    def test_bomb_8(self):
+        """Test 8-card bomb detection."""
+        cards = [
+            Card(CardRank.SEVEN, CardSuit.SPADE, 0),
+            Card(CardRank.SEVEN, CardSuit.HEART, 0),
+            Card(CardRank.SEVEN, CardSuit.CLUB, 0),
+            Card(CardRank.SEVEN, CardSuit.DIAMOND, 0),
+            Card(CardRank.SEVEN, CardSuit.SPADE, 1),
+            Card(CardRank.SEVEN, CardSuit.HEART, 1),
+            Card(CardRank.SEVEN, CardSuit.CLUB, 1),
+            Card(CardRank.SEVEN, CardSuit.DIAMOND, 1),
+        ]
+        info = HandDetector.detect(cards)
+        assert info.hand_type == HandType.BOMB_8
+
+
+class TestHandDetectorHelpers:
+    """Test helper methods."""
+
+    def test_get_rank_with_count_not_found(self):
+        """Test _get_rank_with_count when count not found."""
+        from collections import Counter
+
+        rank_counts = Counter({3: 2, 4: 2})
+        result = HandDetector._get_rank_with_count(rank_counts, 5)
+        assert result == -1
+
+    def test_is_consecutive_empty(self):
+        """Test _is_consecutive with empty list."""
+        result = HandDetector._is_consecutive([])
+        assert result is False
+
+    def test_is_same_suit_empty(self):
+        """Test _is_same_suit with empty list."""
+        result = HandDetector._is_same_suit([])
+        assert result is False
