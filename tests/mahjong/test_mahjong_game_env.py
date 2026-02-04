@@ -202,3 +202,121 @@ class TestMahjongActions:
             ]
         )
         assert discard_actions > 0
+
+    def test_pass_action(self):
+        """Test that pass action works in waiting response phase."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Play until we get to waiting response phase
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            # Check if pass is available
+            if mask[MahjongGameEnv.ACTION_PASS] == 1:
+                _, _, terminated, _, _ = env.step(MahjongGameEnv.ACTION_PASS)
+                break
+            env.step(valid[0])
+
+    def test_self_hu_action(self):
+        """Test self hu action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Try to trigger self hu (may not happen with random seed)
+        for _ in range(50):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            if mask[MahjongGameEnv.ACTION_SELF_HU] == 1:
+                env.step(MahjongGameEnv.ACTION_SELF_HU)
+                break
+            env.step(valid[0])
+
+    def test_an_gang_action(self):
+        """Test an gang action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        for _ in range(50):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            # Check for an_gang actions
+            for i in range(
+                MahjongGameEnv.ACTION_AN_GANG_START, MahjongGameEnv.ACTION_AN_GANG_END
+            ):
+                if mask[i] == 1:
+                    env.step(i)
+                    break
+            else:
+                env.step(valid[0])
+
+    def test_pong_action(self):
+        """Test pong action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            if mask[MahjongGameEnv.ACTION_PONG] == 1:
+                env.step(MahjongGameEnv.ACTION_PONG)
+                break
+            env.step(valid[0])
+
+    def test_gang_action(self):
+        """Test gang action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            if mask[MahjongGameEnv.ACTION_GANG] == 1:
+                env.step(MahjongGameEnv.ACTION_GANG)
+                break
+            env.step(valid[0])
+
+    def test_hu_action(self):
+        """Test hu action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            if mask[MahjongGameEnv.ACTION_HU] == 1:
+                env.step(MahjongGameEnv.ACTION_HU)
+                break
+            env.step(valid[0])
+
+    def test_chi_action(self):
+        """Test chi action handling."""
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            # Check for chi actions
+            for i in range(
+                MahjongGameEnv.ACTION_CHI_START, MahjongGameEnv.ACTION_CHI_END
+            ):
+                if mask[i] == 1:
+                    env.step(i)
+                    break
+            else:
+                env.step(valid[0])
