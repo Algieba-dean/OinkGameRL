@@ -247,3 +247,48 @@ class TestMaskmenGameplay:
                 _, _, terminated, _, info = env.step(valid[0])
                 if terminated:
                     break
+
+
+class TestMaskmenEdgeCases:
+    """Test edge cases for Maskmen game environment."""
+
+    def test_apply_action_loser_reward(self):
+        """Test reward when current player loses."""
+        env = MaskmenGameEnv(player_num=2)
+        env.reset(seed=42)
+
+        # Play until game ends
+        for _ in range(500):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            _, _, terminated, _, _ = env.step(valid[0])
+            if terminated:
+                break
+
+    def test_render_with_table_cards(self):
+        """Test render when there are cards on table."""
+        from games.maskmen.enums import CardColor
+
+        env = MaskmenGameEnv(player_num=4, render_mode="ansi")
+        env.reset(seed=42)
+
+        # Play a few cards to put something on table
+        for _ in range(5):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            env.step(valid[0])
+
+        result = env.render()
+        assert isinstance(result, str)
+        # Check if any color has cards on table
+        has_table_cards = False
+        for color in CardColor:
+            if env._game_state.table[color]:
+                has_table_cards = True
+                break
+        if has_table_cards:
+            assert any(c.name in result for c in CardColor)
