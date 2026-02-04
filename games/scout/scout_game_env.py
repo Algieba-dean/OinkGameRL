@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium import spaces
 
 from games.board_game import BoardGameEnv
+from games.core.reward_shaping import RewardShaping
 from games.registry import register_game
 from games.scout.card.dealer import Dealer
 from games.scout.card.playable_checker import PlayableChecker
@@ -27,7 +28,13 @@ class ScoutGameEnv(BoardGameEnv):
     MAX_CARD_VALUE = 10
     OBSERVATION_SIZE = 200
 
-    def __init__(self, player_num: int = 4, render_mode: str | None = None) -> None:
+    def __init__(
+        self,
+        player_num: int = 4,
+        render_mode: str | None = None,
+        use_shaped_rewards: bool = False,
+        reward_config: dict[str, Any] | None = None,
+    ) -> None:
         if player_num not in PlayerConsts.ALLOWED_PLAYER_NUM:
             raise ValueError(
                 f"Invalid player_num {player_num}, "
@@ -41,6 +48,21 @@ class ScoutGameEnv(BoardGameEnv):
         self._rng: np.random.Generator = np.random.default_rng()
         self._dealer: Dealer = Dealer(random_generator=self._rng)
         self._game_state: GameState | None = None
+
+        # Reward shaping configuration
+        self._use_shaped_rewards = use_shaped_rewards
+        self._reward_config = reward_config or {
+            "use_pbrs": True,
+            "pbrs_gamma": 0.99,
+            "use_relative_reward": True,
+            "action_bonuses": {
+                "clear_hand": 0.5,
+                "play_cards_per_card": 0.01,
+                "use_token": 0.1,
+                "dominate": 0.05,
+            },
+        }
+        self._prev_hand_potential: dict[int, float] = {}
 
         self._action_mapping: list[dict[str, Any]] = []
         self._build_action_mapping()
@@ -105,6 +127,12 @@ class ScoutGameEnv(BoardGameEnv):
             player_num=self._num_players, player_cards=player_cards
         )
         self._current_player_idx = 0
+
+        # Initialize hand potentials for PBRS
+        if self._use_shaped_rewards:
+            self._prev_hand_potential = {}
+            for i in range(self._num_players):
+                self._prev_hand_potential[i] = self._compute_hand_potential(i)
 
     def _get_observation(self, player_idx: int) -> np.ndarray:
         obs = np.zeros(self.OBSERVATION_SIZE, dtype=np.float32)
@@ -276,14 +304,34 @@ class ScoutGameEnv(BoardGameEnv):
 
         return mask
 
+    def _compute_hand_potential(self, player_idx: int) -> float:
+        """Compute hand quality potential for PBRS."""
+        if self._game_state is None:
+            return 0.0
+        player = self._game_state.get_player(player_idx)
+        hand_values = [card.top for card in player.hand]
+        initial_cards = PlayerConsts.PLAYER_CARD_NUM[self._num_players]
+        return RewardShaping.hand_quality_potential(
+            hand_values=hand_values,
+            max_hand_size=initial_cards,
+        )
+
     def _apply_action(self, action: Any) -> tuple[float, bool]:
         if self._game_state is None:
             return 0.0, True
 
         action_def = self._action_mapping[action]
         action_type = action_def["type"]
+        player_idx = self._current_player_idx
 
+        # Store pre-action state for PBRS
+        prev_hand_count = self._game_state.get_player(player_idx).hand_count
+        prev_potential = self._prev_hand_potential.get(player_idx, 0.0)
+
+        # Execute action
+        cards_played = 0
         if action_type == "play":
+            cards_played = action_def["end_idx"] - action_def["start_idx"] + 1
             play_action = PlayAction(
                 start_idx=action_def["start_idx"], end_idx=action_def["end_idx"]
             )
@@ -296,6 +344,8 @@ class ScoutGameEnv(BoardGameEnv):
             )
             scout_action.execute(game_state=self._game_state)
         else:
+            # scout_play action
+            cards_played = action_def["play_end_idx"] - action_def["play_start_idx"] + 1
             scout_play_action = ScoutPlayAction(
                 scout_position=action_def["scout_position"],
                 insert_position=action_def["insert_position"],
@@ -306,14 +356,70 @@ class ScoutGameEnv(BoardGameEnv):
             scout_play_action.execute(game_state=self._game_state)
 
         terminated = self._game_state.is_terminated
+        new_hand_count = self._game_state.get_player(player_idx).hand_count
 
+        # Compute base reward
         reward = 0.0
         if terminated:
-            current_score = self._game_state.score.score_dict[self._current_player_idx]
-            current_hand = self._game_state.get_player(
-                self._current_player_idx
-            ).hand_count
-            reward = float(current_score - current_hand)
+            if self._use_shaped_rewards and self._reward_config.get(
+                "use_relative_reward", False
+            ):
+                # Use relative score reward (zero-sum)
+                scores = [
+                    float(
+                        self._game_state.score.score_dict[i]
+                        - self._game_state.get_player(i).hand_count
+                    )
+                    for i in range(self._num_players)
+                ]
+                rewards = RewardShaping.relative_score_reward(scores, normalize=True)
+                reward = rewards[player_idx]
+            else:
+                current_score = self._game_state.score.score_dict[player_idx]
+                current_hand = self._game_state.get_player(player_idx).hand_count
+                reward = float(current_score - current_hand)
+
+        # Apply shaped rewards if enabled
+        if self._use_shaped_rewards and not terminated:
+            shaped_reward = 0.0
+            action_bonuses = self._reward_config.get("action_bonuses", {})
+
+            # Clear hand bonus
+            if new_hand_count == 0 and prev_hand_count > 0:
+                shaped_reward += RewardShaping.action_specific_reward(
+                    action_type="clear_hand",
+                    bonus_config=action_bonuses,
+                )
+
+            # Play cards bonus (proportional to cards played)
+            if action_type in ("play", "scout_play") and cards_played > 1:
+                shaped_reward += RewardShaping.action_specific_reward(
+                    action_type="play_cards",
+                    bonus_config=action_bonuses,
+                    cards_played=cards_played,
+                )
+
+            # Scout & Play token bonus
+            if action_type == "scout_play":
+                shaped_reward += RewardShaping.action_specific_reward(
+                    action_type="use_token",
+                    bonus_config=action_bonuses,
+                )
+
+            # PBRS: Potential-based reward shaping
+            if self._reward_config.get("use_pbrs", False):
+                new_potential = self._compute_hand_potential(player_idx)
+                gamma = self._reward_config.get("pbrs_gamma", 0.99)
+                pbrs_reward = RewardShaping.pbrs(
+                    env_reward=0.0,
+                    potential_current=prev_potential,
+                    potential_next=new_potential,
+                    gamma=gamma,
+                )
+                shaped_reward += pbrs_reward
+                self._prev_hand_potential[player_idx] = new_potential
+
+            reward += shaped_reward
 
         if not terminated:
             self._game_state.next_player()
