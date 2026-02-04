@@ -555,3 +555,82 @@ class TestMahjongAdvancedActions:
         obs1, _ = env.reset()
         obs2, _ = env.reset()
         # Results may differ without seed
+
+    def test_action_mask_self_hu_available(self):
+        """Test action mask when self hu is available."""
+        from games.mahjong.hand_checker import HandChecker
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        # Force a winning hand scenario
+        env._game_state.draw_tile()
+        player = env._game_state.get_player(0)
+
+        # Check if self hu is available
+        if HandChecker.is_winning_hand(player.hand, player.melds):
+            mask = env._get_action_mask(0)
+            assert mask[MahjongGameEnv.ACTION_SELF_HU] == 1
+
+    def test_action_mask_an_gang_available(self):
+        """Test action mask when an gang is available."""
+        from games.mahjong.hand_checker import HandChecker
+
+        env = MahjongGameEnv()
+        env.reset(seed=42)
+
+        env._game_state.draw_tile()
+        player = env._game_state.get_player(0)
+
+        # Check if an gang is available
+        an_gang_types = HandChecker.can_an_gang(player.hand)
+        if an_gang_types:
+            mask = env._get_action_mask(0)
+            for type_id in an_gang_types:
+                assert mask[MahjongGameEnv.ACTION_AN_GANG_START + type_id] == 1
+
+    def test_render_with_melds(self):
+        """Test render when player has melds."""
+        env = MahjongGameEnv(render_mode="ansi")
+        env.reset(seed=42)
+
+        # Play until someone has melds or game ends
+        for _ in range(100):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            env.step(valid[0])
+
+            # Check if any player has melds
+            for i in range(4):
+                p = env._game_state.get_player(i)
+                if p.melds:
+                    result = env.render()
+                    assert "Melds" in result
+                    return
+
+    def test_render_with_last_discard(self):
+        """Test render when there's a last discard."""
+        env = MahjongGameEnv(render_mode="ansi")
+        env.reset(seed=42)
+
+        # Draw and discard
+        env._apply_action(MahjongGameEnv.ACTION_DRAW)
+        player = env._game_state.get_player(0)
+        tile = player.hand[0]
+        env._apply_action(MahjongGameEnv.ACTION_DISCARD_START + tile.tile_id)
+
+        result = env.render()
+        assert "Last Discard" in result
+
+    def test_render_with_winner(self):
+        """Test render when there's a winner."""
+        env = MahjongGameEnv(render_mode="ansi")
+        env.reset(seed=42)
+
+        # Force winner
+        env._game_state._winner_idx = 0
+
+        result = env.render()
+        assert "Winner" in result
