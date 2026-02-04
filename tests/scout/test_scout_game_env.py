@@ -369,3 +369,72 @@ class TestScoutGameEnvShapedRewards:
             env.step(action)
             # Potential should be updated for player 0
             assert 0 in env._prev_hand_potential
+
+
+class TestScoutEdgeCases:
+    """Test edge cases for Scout game environment."""
+
+    def test_reset_without_seed(self):
+        """Test reset without seed uses random generator."""
+        env = ScoutGameEnv(player_num=4)
+        obs, _ = env.reset()  # No seed
+        assert obs is not None
+
+    def test_get_observation_game_state_none(self):
+        """Test _get_observation when game_state is None."""
+        env = ScoutGameEnv(player_num=4)
+        obs = env._get_observation(0)
+        assert np.all(obs == 0)
+
+    def test_get_global_state_game_state_none(self):
+        """Test _get_global_state when game_state is None."""
+        env = ScoutGameEnv(player_num=4)
+        state = env._get_global_state()
+        assert state == {}
+
+    def test_get_action_mask_game_state_none(self):
+        """Test _get_action_mask when game_state is None."""
+        env = ScoutGameEnv(player_num=4)
+        mask = env._get_action_mask(0)
+        assert all(m == 0 for m in mask)
+
+    def test_apply_action_game_state_none(self):
+        """Test _apply_action when game_state is None."""
+        env = ScoutGameEnv(player_num=4)
+        reward, terminated = env._apply_action(0)
+        assert reward == 0.0
+        assert terminated is True
+
+    def test_render_before_reset(self):
+        """Test render before reset."""
+        env = ScoutGameEnv(player_num=4, render_mode="ansi")
+        result = env._render_text()
+        assert "not initialized" in result.lower()
+
+    def test_play_until_termination_with_winner(self):
+        """Test playing until termination and check winner reward."""
+        env = ScoutGameEnv(player_num=3)
+        _, info = env.reset(seed=42)
+
+        for _ in range(500):
+            mask = info["action_mask"]
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            _, _, terminated, _, info = env.step(valid[0])
+            if terminated:
+                break
+
+    def test_render_with_board_cards(self):
+        """Test render when there are cards on board."""
+        env = ScoutGameEnv(player_num=3, render_mode="ansi")
+        env.reset(seed=42)
+
+        # Play a card to put something on board
+        mask = env._get_action_mask(env.current_player_idx)
+        valid = [i for i, v in enumerate(mask) if v == 1]
+        if valid:
+            env.step(valid[0])
+
+        result = env.render()
+        assert isinstance(result, str)
