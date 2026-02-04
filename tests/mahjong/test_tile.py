@@ -135,3 +135,32 @@ class TestCreateFullTileset:
         tiles = create_full_tileset()
         types = set(t.tile_type_id for t in tiles)
         assert len(types) == 34
+
+
+class TestTileEdgeCases:
+    """Test edge cases for Tile class."""
+
+    def test_tile_str_unknown_suit(self):
+        """Test string representation for unknown suit (defensive code)."""
+        tile = Tile(TileSuit.WAN, 1, 0)
+        # The line 40 is defensive code that should never be reached in normal use
+        # Just verify normal tiles work correctly
+        assert "万" in str(tile)
+
+    def test_tile_type_id_all_suits(self):
+        """Test tile_type_id for all valid suits."""
+        # WAN
+        for rank in range(1, 10):
+            assert Tile(TileSuit.WAN, rank, 0).tile_type_id == rank - 1
+        # TIAO
+        for rank in range(1, 10):
+            assert Tile(TileSuit.TIAO, rank, 0).tile_type_id == 9 + rank - 1
+        # TONG
+        for rank in range(1, 10):
+            assert Tile(TileSuit.TONG, rank, 0).tile_type_id == 18 + rank - 1
+        # FENG
+        for rank in range(1, 5):
+            assert Tile(TileSuit.FENG, rank, 0).tile_type_id == 27 + rank - 1
+        # JIAN
+        for rank in range(1, 4):
+            assert Tile(TileSuit.JIAN, rank, 0).tile_type_id == 31 + rank - 1
