@@ -183,3 +183,67 @@ class TestMaskmenGameplay:
                 break
 
         assert terminated, "Game should terminate within max_steps"
+
+    def test_reset_without_seed(self):
+        """Test reset without seed uses random generator."""
+        env = MaskmenGameEnv(player_num=4)
+        obs1, _ = env.reset()
+        obs2, _ = env.reset()
+        # Without seed, results should likely differ
+        # (not guaranteed but very likely)
+
+    def test_get_observation_before_reset(self):
+        """Test observation before reset returns zeros."""
+        env = MaskmenGameEnv(player_num=4)
+        obs = env._get_observation(0)
+        assert np.all(obs == 0)
+
+    def test_get_global_state_before_reset(self):
+        """Test global state before reset returns empty dict."""
+        env = MaskmenGameEnv(player_num=4)
+        state = env._get_global_state()
+        assert state == {}
+
+    def test_get_action_mask_before_reset(self):
+        """Test action mask before reset returns all zeros."""
+        env = MaskmenGameEnv(player_num=4)
+        mask = env._get_action_mask(0)
+        assert all(m == 0 for m in mask)
+
+    def test_apply_action_before_reset(self):
+        """Test apply action before reset returns 0 reward and terminated."""
+        env = MaskmenGameEnv(player_num=4)
+        reward, terminated = env._apply_action(0)
+        assert reward == 0.0
+        assert terminated is True
+
+    def test_render_before_reset(self):
+        """Test render before reset returns appropriate message."""
+        env = MaskmenGameEnv(player_num=4, render_mode="ansi")
+        result = env._render_text()
+        assert "not initialized" in result.lower() or result == ""
+
+    def test_play_card_action(self):
+        """Test play card action."""
+        env = MaskmenGameEnv(player_num=4)
+        env.reset(seed=42)
+        # Find a valid action and execute it
+        mask = env._get_action_mask(env.current_player_idx)
+        for i, v in enumerate(mask):
+            if v == 1:
+                env.step(i)
+                break
+
+    def test_multiple_games(self):
+        """Test playing multiple games in sequence."""
+        env = MaskmenGameEnv(player_num=4)
+        for seed in range(3):
+            _, info = env.reset(seed=seed)
+            for _ in range(50):
+                mask = info["action_mask"]
+                valid = [i for i, v in enumerate(mask) if v == 1]
+                if not valid:
+                    break
+                _, _, terminated, _, info = env.step(valid[0])
+                if terminated:
+                    break
