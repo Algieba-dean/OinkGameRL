@@ -647,3 +647,19 @@ class TestMahjongAdvancedActions:
         state._pending_responses = {1: []}  # Empty actions list
         result = state.respond(1, ActionType.HU)  # HU not in pending
         assert result is False
+
+    def test_respond_draw_action_falls_through(self):
+        """Test respond with DRAW action falls through to return False."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Force waiting response phase with DRAW in pending (unusual but tests the code)
+        state._phase = GamePhase.WAITING_RESPONSE
+        state._pending_responses = {1: [ActionType.DRAW]}  # DRAW is not handled
+        state._last_discard = Tile(TileSuit.WAN, 5, 0)
+        state._last_discard_player = 0
+
+        # DRAW action is in pending but not handled by respond
+        result = state.respond(1, ActionType.DRAW)
+        assert result is False
