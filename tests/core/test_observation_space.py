@@ -142,3 +142,34 @@ class TestObservationSpaceBuilder:
         builder = ObservationSpaceBuilder()
         flat_obs = builder.flatten({})
         assert len(flat_obs) == 0
+
+    def test_unknown_component_type_in_component_info(self):
+        """Test handling of unknown component type in get_component_info."""
+        builder = ObservationSpaceBuilder()
+        builder.add_box("a", shape=(5,), low=0, high=1)
+        # Manually add an unknown type component
+        builder._components["unknown"] = {"type": "unknown_type"}
+        builder._order.append("unknown")
+
+        info = builder.get_component_info()
+        # Unknown type should have size 0
+        assert info["unknown"]["start"] == 5
+        assert info["unknown"]["end"] == 5
+
+    def test_unknown_component_type_in_unflatten(self):
+        """Test handling of unknown component type in unflatten."""
+        builder = ObservationSpaceBuilder()
+        builder.add_box("a", shape=(2,), low=0, high=1)
+        # Manually add an unknown type component
+        builder._components["unknown"] = {"type": "unknown_type"}
+        builder._order.append("unknown")
+
+        flat_obs = np.array([0.1, 0.2], dtype=np.float32)
+        obs_dict = builder.unflatten(flat_obs)
+
+        # Should still unflatten the known components
+        np.testing.assert_array_almost_equal(
+            obs_dict["a"], np.array([0.1, 0.2], dtype=np.float32)
+        )
+        # Unknown component should not be in result
+        assert "unknown" not in obs_dict

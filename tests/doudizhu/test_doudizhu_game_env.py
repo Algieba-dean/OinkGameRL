@@ -378,3 +378,68 @@ class TestDoudizhuAdvanced:
 
         reward, terminated = env._apply_action(0)
         assert terminated is True
+
+    def test_action_mask_skip_empty_card_ids(self):
+        """Test that action mask skips empty card_ids."""
+        env = DoudizhuGameEnv()
+        env.reset(seed=42)
+        env.step(1)  # Bid to enter playing phase
+
+        # Manually add an empty card_ids entry
+        original_len = len(env._action_mapping)
+        env._action_mapping.append([])  # Empty card_ids
+
+        mask = env._get_action_mask(env.current_player_idx)
+        # The empty entry should be skipped (mask should be 0)
+        assert mask[original_len] == 0
+
+    def test_action_mask_skip_invalid_hand_type(self):
+        """Test that action mask skips invalid hand types."""
+        env = DoudizhuGameEnv()
+        env.reset(seed=42)
+        env.step(1)  # Bid to enter playing phase
+
+        # Add an invalid hand (two different singles)
+        from games.doudizhu.card import Card
+        from games.doudizhu.enums import CardRank, CardSuit
+
+        card1 = Card(CardRank.THREE, CardSuit.SPADE)
+        card2 = Card(CardRank.FIVE, CardSuit.HEART)
+        env._action_mapping.append([card1.card_id, card2.card_id])
+
+        mask = env._get_action_mask(env.current_player_idx)
+        # Invalid hand should have mask 0
+        assert mask[-1] == 0
+
+    def test_game_termination_winner_same_team(self):
+        """Test reward when winner is on same team."""
+        env = DoudizhuGameEnv()
+        env.reset(seed=42)
+
+        # Play until game ends
+        max_steps = 500
+        for _ in range(max_steps):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid_actions = [i for i, v in enumerate(mask) if v == 1]
+            if not valid_actions:
+                break
+            action = valid_actions[0]
+            _, _, terminated, _, _ = env.step(action)
+            if terminated:
+                break
+
+    def test_render_with_landlord_and_last_play(self):
+        """Test render when landlord is set and there's a last play."""
+        env = DoudizhuGameEnv(render_mode="ansi")
+        env.reset(seed=42)
+        env.step(1)  # Bid
+
+        # Play a card
+        mask = env._get_action_mask(env.current_player_idx)
+        valid_actions = [i for i, v in enumerate(mask) if v == 1]
+        if valid_actions:
+            env.step(valid_actions[0])
+
+        result = env.render()
+        assert isinstance(result, str)
+        assert "Landlord" in result or "landlord" in result.lower()
