@@ -187,3 +187,235 @@ class TestCurriculumReward:
             dense_reward=1.0, sparse_reward=0.0, alpha=0.5
         )
         assert blended == 0.5
+
+
+class TestActionSpecificReward:
+    """Test action-specific dense rewards."""
+
+    def test_clear_hand_bonus(self):
+        """Test bonus for clearing hand (triggering end game)."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="clear_hand",
+            bonus_config={"clear_hand": 0.5},
+        )
+        assert reward == 0.5
+
+    def test_play_multiple_cards_bonus(self):
+        """Test bonus proportional to cards played."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="play_cards",
+            cards_played=4,
+            bonus_config={"play_cards_per_card": 0.01},
+        )
+        assert abs(reward - 0.04) < 1e-6
+
+    def test_use_special_token_bonus(self):
+        """Test bonus for using special token (e.g., Scout & Play)."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="use_token",
+            bonus_config={"use_token": 0.1},
+        )
+        assert reward == 0.1
+
+    def test_dominate_opponent_bonus(self):
+        """Test bonus for forcing opponent to pass."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="dominate",
+            bonus_config={"dominate": 0.05},
+        )
+        assert reward == 0.05
+
+    def test_unknown_action_no_bonus(self):
+        """Test that unknown action types return 0."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="unknown_action",
+            bonus_config={"clear_hand": 0.5},
+        )
+        assert reward == 0.0
+
+    def test_missing_config_no_bonus(self):
+        """Test that missing config returns 0."""
+        reward = RewardShaping.action_specific_reward(
+            action_type="clear_hand",
+            bonus_config={},
+        )
+        assert reward == 0.0
+
+
+class TestPotentialFunctions:
+    """Test potential function utilities."""
+
+    def test_hand_quality_consecutive(self):
+        """Test hand quality based on consecutive cards."""
+        # Hand with consecutive cards [1,2,3,4,5] should have positive potential
+        hand_values = [1, 2, 3, 4, 5]
+        potential = RewardShaping.hand_quality_potential(
+            hand_values=hand_values,
+            max_hand_size=10,
+        )
+        assert potential > 0.0
+
+    def test_hand_quality_scattered(self):
+        """Test hand quality with scattered cards."""
+        # Hand with scattered cards [1,3,5,7,9] should have lower potential
+        # than consecutive cards
+        scattered_values = [1, 3, 5, 7, 9]
+        consecutive_values = [1, 2, 3, 4, 5]
+        scattered_potential = RewardShaping.hand_quality_potential(
+            hand_values=scattered_values,
+            max_hand_size=10,
+        )
+        consecutive_potential = RewardShaping.hand_quality_potential(
+            hand_values=consecutive_values,
+            max_hand_size=10,
+        )
+        assert scattered_potential < consecutive_potential
+
+    def test_hand_quality_pairs(self):
+        """Test hand quality with pairs."""
+        # Hand with pairs [2,2,5,5,8] should have positive potential
+        hand_values = [2, 2, 5, 5, 8]
+        potential = RewardShaping.hand_quality_potential(
+            hand_values=hand_values,
+            max_hand_size=10,
+        )
+        assert potential > 0.0
+
+    def test_hand_quality_empty(self):
+        """Test hand quality for empty hand."""
+        potential = RewardShaping.hand_quality_potential(
+            hand_values=[],
+            max_hand_size=10,
+        )
+        assert potential == 0.0
+
+    def test_hand_quality_normalized(self):
+        """Test that hand quality is in [0, 1] range."""
+        hand_values = [1, 1, 1, 2, 2, 2, 3, 3, 3]
+        potential = RewardShaping.hand_quality_potential(
+            hand_values=hand_values,
+            max_hand_size=10,
+        )
+        assert 0.0 <= potential <= 1.0
+
+    def test_game_progress_potential(self):
+        """Test game progress potential."""
+        # Early game (many cards left)
+        early_potential = RewardShaping.game_progress_potential(
+            cards_remaining=10,
+            initial_cards=13,
+        )
+        # Late game (few cards left)
+        late_potential = RewardShaping.game_progress_potential(
+            cards_remaining=2,
+            initial_cards=13,
+        )
+        assert late_potential > early_potential
+
+    def test_game_progress_empty_hand(self):
+        """Test game progress potential with empty hand."""
+        potential = RewardShaping.game_progress_potential(
+            cards_remaining=0,
+            initial_cards=13,
+        )
+        assert potential == 1.0
+
+    def test_score_lead_potential(self):
+        """Test score lead potential."""
+        # Leading by 5 points
+        potential = RewardShaping.score_lead_potential(
+            my_score=15,
+            opponent_scores=[10, 8, 12],
+        )
+        assert potential > 0
+
+    def test_score_lead_potential_behind(self):
+        """Test score lead potential when behind."""
+        potential = RewardShaping.score_lead_potential(
+            my_score=5,
+            opponent_scores=[10, 15, 20],
+        )
+        assert potential < 0
+
+
+class TestIntrinsicMotivation:
+    """Test intrinsic motivation rewards."""
+
+    def test_exploration_bonus_novel_state(self):
+        """Test exploration bonus for novel states."""
+        state_counts = {"state_a": 1, "state_b": 10}
+        bonus = RewardShaping.exploration_bonus(
+            state_key="state_a",
+            state_counts=state_counts,
+            bonus_scale=0.1,
+        )
+        # Novel state should get higher bonus
+        assert bonus > 0
+
+    def test_exploration_bonus_visited_state(self):
+        """Test exploration bonus for frequently visited states."""
+        state_counts = {"state_a": 1, "state_b": 100}
+        bonus = RewardShaping.exploration_bonus(
+            state_key="state_b",
+            state_counts=state_counts,
+            bonus_scale=0.1,
+        )
+        # Frequently visited state should get lower bonus
+        assert bonus < 0.02
+
+    def test_exploration_bonus_new_state(self):
+        """Test exploration bonus for completely new state."""
+        state_counts = {"state_a": 1}
+        bonus = RewardShaping.exploration_bonus(
+            state_key="new_state",
+            state_counts=state_counts,
+            bonus_scale=0.1,
+        )
+        # New state should get maximum bonus
+        assert bonus == 0.1
+
+    def test_prediction_reward(self):
+        """Test reward for correct predictions."""
+        reward = RewardShaping.prediction_reward(
+            predicted=True,
+            actual=True,
+            correct_reward=0.05,
+            incorrect_penalty=-0.02,
+        )
+        assert reward == 0.05
+
+    def test_prediction_penalty(self):
+        """Test penalty for incorrect predictions."""
+        reward = RewardShaping.prediction_reward(
+            predicted=True,
+            actual=False,
+            correct_reward=0.05,
+            incorrect_penalty=-0.02,
+        )
+        assert reward == -0.02
+
+
+class TestZeroSumNormalization:
+    """Test zero-sum normalization utilities."""
+
+    def test_normalize_to_zero_sum(self):
+        """Test normalizing rewards to zero-sum."""
+        rewards = [10.0, 5.0, 3.0, 2.0]
+        normalized = RewardShaping.normalize_to_zero_sum(rewards)
+        assert abs(sum(normalized)) < 1e-6
+
+    def test_normalize_preserves_order(self):
+        """Test that normalization preserves reward ordering."""
+        rewards = [10.0, 5.0, 3.0, 2.0]
+        normalized = RewardShaping.normalize_to_zero_sum(rewards)
+        assert normalized[0] > normalized[1] > normalized[2] > normalized[3]
+
+    def test_normalize_empty_list(self):
+        """Test normalizing empty list."""
+        normalized = RewardShaping.normalize_to_zero_sum([])
+        assert normalized == []
+
+    def test_normalize_single_player(self):
+        """Test normalizing single player reward."""
+        normalized = RewardShaping.normalize_to_zero_sum([5.0])
+        assert normalized == [0.0]

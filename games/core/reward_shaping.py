@@ -220,3 +220,215 @@ class RewardShaping:
                 reward = RewardShaping.curriculum_blend(dense, sparse, alpha)
         """
         return alpha * dense_reward + (1 - alpha) * sparse_reward
+
+    @staticmethod
+    def action_specific_reward(
+        action_type: str,
+        bonus_config: dict[str, float],
+        cards_played: int = 0,
+    ) -> float:
+        """Compute action-specific dense rewards.
+
+        Provides small intermediate rewards for specific actions to accelerate
+        learning. Use sparingly to avoid changing optimal policy.
+
+        Args:
+            action_type: Type of action performed. Supported types:
+                - "clear_hand": Player cleared their hand (triggers end game)
+                - "play_cards": Player played cards (bonus per card)
+                - "use_token": Player used special token (e.g., Scout & Play)
+                - "dominate": Player forced opponent to pass
+            bonus_config: Dict mapping action types to bonus values.
+                For "play_cards", use "play_cards_per_card" key.
+            cards_played: Number of cards played (for "play_cards" action).
+
+        Returns:
+            The action-specific reward bonus.
+
+        Example:
+            config = {
+                "clear_hand": 0.5,
+                "play_cards_per_card": 0.01,
+                "use_token": 0.1,
+                "dominate": 0.05,
+            }
+            reward = RewardShaping.action_specific_reward(
+                action_type="play_cards",
+                bonus_config=config,
+                cards_played=4,
+            )  # Returns 0.04
+        """
+        if action_type == "play_cards":
+            per_card_bonus = bonus_config.get("play_cards_per_card", 0.0)
+            return per_card_bonus * cards_played
+        return bonus_config.get(action_type, 0.0)
+
+    @staticmethod
+    def hand_quality_potential(
+        hand_values: list[int],
+        max_hand_size: int,
+        consecutive_weight: float = 0.6,
+        pair_weight: float = 0.4,
+    ) -> float:
+        """Compute potential function based on hand quality.
+
+        Evaluates hand quality for PBRS. Higher potential means better hand
+        (more consecutive cards, more pairs/triples).
+
+        Args:
+            hand_values: List of card values/ranks in hand.
+            max_hand_size: Maximum possible hand size (for normalization).
+            consecutive_weight: Weight for consecutive card bonus.
+            pair_weight: Weight for pair/triple bonus.
+
+        Returns:
+            Potential value in [0, 1] range.
+
+        Example:
+            # Hand with consecutive cards
+            potential = RewardShaping.hand_quality_potential(
+                hand_values=[3, 4, 5, 6, 7],
+                max_hand_size=13,
+            )  # High potential
+        """
+        if not hand_values:
+            return 0.0
+
+        sorted_values = sorted(hand_values)
+        n = len(sorted_values)
+
+        # Count consecutive sequences
+        consecutive_count = 0
+        current_seq = 1
+        for i in range(1, n):
+            if sorted_values[i] == sorted_values[i - 1] + 1:
+                current_seq += 1
+            else:
+                if current_seq >= 2:
+                    consecutive_count += current_seq
+                current_seq = 1
+        if current_seq >= 2:
+            consecutive_count += current_seq
+
+        # Count pairs/triples
+        from collections import Counter
+
+        value_counts = Counter(sorted_values)
+        pair_count = sum(1 for count in value_counts.values() if count >= 2)
+        triple_count = sum(1 for count in value_counts.values() if count >= 3)
+
+        # Normalize scores
+        max_consecutive = max_hand_size
+        max_pairs = max_hand_size // 2
+
+        consecutive_score = min(consecutive_count / max_consecutive, 1.0)
+        pair_score = min((pair_count + triple_count * 2) / max_pairs, 1.0)
+
+        # Weighted combination
+        potential = consecutive_weight * consecutive_score + pair_weight * pair_score
+        return min(potential, 1.0)
+
+    @staticmethod
+    def game_progress_potential(
+        cards_remaining: int,
+        initial_cards: int,
+    ) -> float:
+        """Compute potential based on game progress (cards played).
+
+        Higher potential when closer to clearing hand.
+
+        Args:
+            cards_remaining: Number of cards remaining in hand.
+            initial_cards: Initial number of cards dealt.
+
+        Returns:
+            Potential value in [0, 1] range.
+        """
+        if initial_cards <= 0:
+            return 0.0
+        return 1.0 - (cards_remaining / initial_cards)
+
+    @staticmethod
+    def score_lead_potential(
+        my_score: float,
+        opponent_scores: list[float],
+        normalize_factor: float = 10.0,
+    ) -> float:
+        """Compute potential based on score lead over opponents.
+
+        Args:
+            my_score: Current player's score.
+            opponent_scores: List of opponent scores.
+            normalize_factor: Factor to normalize the lead.
+
+        Returns:
+            Potential value (positive if leading, negative if behind).
+        """
+        if not opponent_scores:
+            return 0.0
+        avg_opponent = sum(opponent_scores) / len(opponent_scores)
+        lead = my_score - avg_opponent
+        return lead / normalize_factor
+
+    @staticmethod
+    def exploration_bonus(
+        state_key: str,
+        state_counts: dict[str, int],
+        bonus_scale: float = 0.1,
+    ) -> float:
+        """Compute exploration bonus for curiosity-driven learning.
+
+        Encourages visiting novel states using count-based exploration.
+        Formula: bonus = scale / sqrt(count)
+
+        Args:
+            state_key: String representation of current state.
+            state_counts: Dict mapping state keys to visit counts.
+            bonus_scale: Scale factor for the bonus.
+
+        Returns:
+            Exploration bonus (higher for less-visited states).
+        """
+        count = state_counts.get(state_key, 0)
+        if count == 0:
+            return bonus_scale
+        return bonus_scale / (count**0.5)
+
+    @staticmethod
+    def prediction_reward(
+        predicted: bool,
+        actual: bool,
+        correct_reward: float = 0.05,
+        incorrect_penalty: float = -0.02,
+    ) -> float:
+        """Compute reward for auxiliary prediction tasks.
+
+        Used for training auxiliary heads (e.g., predicting opponent actions).
+
+        Args:
+            predicted: The predicted value.
+            actual: The actual value.
+            correct_reward: Reward for correct prediction.
+            incorrect_penalty: Penalty for incorrect prediction.
+
+        Returns:
+            Reward based on prediction accuracy.
+        """
+        return correct_reward if predicted == actual else incorrect_penalty
+
+    @staticmethod
+    def normalize_to_zero_sum(rewards: list[float]) -> list[float]:
+        """Normalize rewards to sum to zero.
+
+        Args:
+            rewards: List of rewards for each player.
+
+        Returns:
+            Normalized rewards that sum to zero.
+        """
+        if not rewards:
+            return []
+        if len(rewards) == 1:
+            return [0.0]
+        mean_reward = sum(rewards) / len(rewards)
+        return [r - mean_reward for r in rewards]
