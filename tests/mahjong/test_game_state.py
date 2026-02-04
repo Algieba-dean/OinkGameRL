@@ -4,8 +4,9 @@ import numpy as np
 import pytest
 
 from games.mahjong.constants import GameConsts
-from games.mahjong.enums import ActionType, GamePhase
+from games.mahjong.enums import ActionType, GamePhase, TileSuit
 from games.mahjong.game_state import GameState
+from games.mahjong.tile import Tile
 
 
 class TestGameStateInit:
@@ -593,3 +594,56 @@ class TestMahjongAdvancedActions:
                 # All passes should work, but if we somehow get an unhandled action
                 # the function returns False at the end
                 break
+
+    def test_discard_tile_player_cannot_discard(self):
+        """Test discard_tile returns False when player cannot discard."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        state.draw_tile()
+        # Try to discard a tile not in hand
+        fake_tile = Tile(TileSuit.WAN, 9, 3)
+        player = state.get_player(0)
+        if fake_tile not in player.hand:
+            result = state.discard_tile(fake_tile)
+            assert result is False
+
+    def test_respond_chi_with_invalid_tiles(self):
+        """Test respond CHI with invalid tiles parameter."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Force waiting response phase with CHI available
+        state._phase = GamePhase.WAITING_RESPONSE
+        state._pending_responses = {1: [ActionType.CHI]}
+        state._last_discard = Tile(TileSuit.WAN, 5, 0)
+        state._last_discard_player = 0
+
+        # CHI with None tiles
+        result = state.respond(1, ActionType.CHI, tiles=None)
+        assert result is False
+
+        # CHI with wrong number of tiles
+        result = state.respond(1, ActionType.CHI, tiles=[Tile(TileSuit.WAN, 4, 0)])
+        assert result is False
+
+    def test_respond_unhandled_action_type(self):
+        """Test respond returns False for unhandled action type."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Force waiting response phase
+        state._phase = GamePhase.WAITING_RESPONSE
+        state._pending_responses = {1: [ActionType.PASS]}
+        state._last_discard = Tile(TileSuit.WAN, 5, 0)
+        state._last_discard_player = 0
+
+        # Try an action that's not in pending responses and not handled
+        # This should hit the final return False
+        # Create a scenario where respond falls through to return False
+        state._pending_responses = {1: []}  # Empty actions list
+        result = state.respond(1, ActionType.HU)  # HU not in pending
+        assert result is False
