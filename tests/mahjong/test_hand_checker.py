@@ -220,3 +220,12 @@ class TestIsTenpai:
         ]
         result = HandChecker.is_tenpai(hand, [])
         assert len(result) == 0
+
+
+class TestCanFormWinning:
+    """Test _can_form_winning helper method."""
+
+    def test_empty_tiles_returns_true(self):
+        """Test that empty tiles list returns True."""
+        result = HandChecker._can_form_winning([])
+        assert result is True
