@@ -283,6 +283,25 @@ rewards = RewardShaping.relative_score_reward(scores, normalize=True)
 # Simple win/lose rewards
 rewards = RewardShaping.win_lose_reward(num_players=3, winner_idx=1)
 # [-1.0, 1.0, -1.0]
+
+# Potential-Based Reward Shaping (PBRS) - won't change optimal policy
+def hand_potential(hand):
+    return count_consecutive_cards(hand) / max_hand_size
+
+shaped_reward = RewardShaping.pbrs(
+    env_reward=reward,
+    potential_current=hand_potential(old_hand),
+    potential_next=hand_potential(new_hand) if not done else 0.0,
+    gamma=0.99
+)
+
+# Curriculum learning: blend dense and sparse rewards
+# Start with alpha=1.0 (dense), gradually decrease to 0.0 (sparse)
+blended = RewardShaping.curriculum_blend(
+    dense_reward=step_reward,
+    sparse_reward=win_lose_reward,
+    alpha=max(0.0, 1.0 - epoch / warmup_epochs)
+)
 ```
 
 #### Observation Space Builder
