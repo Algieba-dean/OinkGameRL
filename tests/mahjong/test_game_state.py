@@ -235,3 +235,58 @@ class TestAdvancedResponses:
         tile = state.draw_tile()
         assert tile is None
         assert state.is_terminated
+
+    def test_respond_action_not_in_allowed_actions(self):
+        """Test responding with action not in allowed actions."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.draw_tile()
+        player = state.get_player(0)
+        state.discard_tile(player.hand[0])
+
+        if state.phase == GamePhase.WAITING_RESPONSE:
+            for player_idx in list(state._pending_responses.keys()):
+                allowed = state._pending_responses[player_idx]
+                # Try an action not in allowed list
+                if ActionType.HU not in allowed:
+                    result = state.respond(player_idx, ActionType.HU)
+                    assert result is False
+                break
+
+    def test_respond_with_last_discard_none(self):
+        """Test respond when last_discard is None (edge case)."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.draw_tile()
+        player = state.get_player(0)
+        state.discard_tile(player.hand[0])
+
+        if state.phase == GamePhase.WAITING_RESPONSE:
+            # Force last_discard to None
+            state._last_discard = None
+            for player_idx in list(state._pending_responses.keys()):
+                result = state.respond(player_idx, ActionType.PASS)
+                assert result is False
+                break
+
+    def test_chi_with_wrong_tile_count(self):
+        """Test chi with wrong number of tiles."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.draw_tile()
+        player = state.get_player(0)
+        state.discard_tile(player.hand[0])
+
+        if state.phase == GamePhase.WAITING_RESPONSE:
+            for player_idx in list(state._pending_responses.keys()):
+                # Try CHI with only 1 tile
+                result = state.respond(
+                    player_idx,
+                    ActionType.CHI,
+                    tiles=[state.get_player(player_idx).hand[0]],
+                )
+                assert result is False
+                break
