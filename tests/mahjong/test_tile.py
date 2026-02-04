@@ -143,9 +143,17 @@ class TestTileEdgeCases:
     def test_tile_str_unknown_suit(self):
         """Test string representation for unknown suit (defensive code)."""
         tile = Tile(TileSuit.WAN, 1, 0)
-        # The line 40 is defensive code that should never be reached in normal use
-        # Just verify normal tiles work correctly
-        assert "万" in str(tile)
+        # Use object.__setattr__ to modify frozen dataclass
+        object.__setattr__(tile, "suit", 99)  # Invalid suit value
+        result = str(tile)
+        assert "?" in result
+
+    def test_tile_type_id_unknown_suit(self):
+        """Test tile_type_id for unknown suit (defensive code)."""
+        tile = Tile(TileSuit.WAN, 1, 0)
+        # Use object.__setattr__ to modify frozen dataclass
+        object.__setattr__(tile, "suit", 99)  # Invalid suit value
+        assert tile.tile_type_id == -1
 
     def test_tile_type_id_all_suits(self):
         """Test tile_type_id for all valid suits."""
