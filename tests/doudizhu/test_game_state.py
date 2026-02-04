@@ -277,3 +277,35 @@ class TestGameStateEdgeCases:
         if low_card.rank.value < high_card.rank.value:
             result = state.play([low_card])
             assert result is False
+
+    def test_play_invalid_hand_type(self):
+        """Test that playing invalid hand type returns False."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.bid(want_landlord=True)
+
+        # Try to play two different cards (invalid hand)
+        player = state.get_player(0)
+        if player.hand_count >= 2:
+            # Find two cards with different ranks
+            for i, c1 in enumerate(player.hand):
+                for c2 in player.hand[i + 1 :]:
+                    if c1.rank != c2.rank:
+                        result = state.play([c1, c2])
+                        assert result is False
+                        return
+
+    def test_get_winner_no_empty_hand(self):
+        """Test get_winner returns None when no player has empty hand."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.bid(want_landlord=True)
+
+        # Force game to finished state without anyone having empty hand
+        state._phase = GamePhase.FINISHED
+
+        # All players still have cards
+        winner = state.get_winner()
+        assert winner is None
