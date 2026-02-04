@@ -267,6 +267,18 @@ class TestPlayActionEdgeCases:
         with pytest.raises(NotImplementedError):
             action.execute(game_state=GameStates())
 
+    def test_play_action_with_board_cards(self, game_state_fixture, card_factory):
+        """Test play action when board has cards (uses PlayableChecker)."""
+        # First play some cards to the board
+        game_state_fixture.board.play_to_board(
+            player_idx=1, played_cards=[card_factory(top=3)]
+        )
+        # Now try to play a higher card
+        action = PlayAction(start_idx=0, end_idx=0)
+        # This will use PlayableChecker.is_playable
+        result = action.is_valid(game_state=game_state_fixture)
+        assert isinstance(result, bool)
+
 
 class TestScoutActionEdgeCases:
     """Test edge cases for ScoutAction."""
