@@ -164,3 +164,33 @@ class TestReset:
         assert gs.current_player_idx == 0
         assert gs.deck_count == 1
         assert gs.table[CardColor.RED] == ()
+
+
+class TestGetWinnerTiebreaker:
+    """Test get_winner when game ends by other means."""
+
+    def test_winner_by_most_sets_when_terminated(self, sample_hands_4p):
+        """Test winner determined by most sets when game terminates."""
+        # Create game with empty deck and empty hands to force termination
+        empty_hands = [[] for _ in range(4)]
+        gs = GameState(player_num=4, player_hands=empty_hands, deck=[])
+
+        # Give player 1 more sets than others
+        gs.players[1].collect_set(CardColor.RED)
+        gs.players[1].collect_set(CardColor.BLUE)
+
+        # Game should be terminated (no cards anywhere)
+        assert gs.is_terminated is True
+        assert gs.get_winner() == 1
+
+    def test_no_winner_when_tie(self, sample_hands_4p):
+        """Test no winner when multiple players have same max sets."""
+        empty_hands = [[] for _ in range(4)]
+        gs = GameState(player_num=4, player_hands=empty_hands, deck=[])
+
+        # Give two players same number of sets
+        gs.players[0].collect_set(CardColor.RED)
+        gs.players[1].collect_set(CardColor.BLUE)
+
+        assert gs.is_terminated is True
+        assert gs.get_winner() is None  # Tie, no single winner
