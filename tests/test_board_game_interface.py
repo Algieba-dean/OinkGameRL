@@ -16,8 +16,8 @@ class DummyBoardGameEnv(BoardGameEnv):
     TERMINATED = False
     RENDER_TEXT = "DummyBoardGameEnv"
 
-    def __init__(self, render_mode=None):
-        super().__init__(render_mode=render_mode)
+    def __init__(self, render_mode=None, max_steps=None):
+        super().__init__(render_mode=render_mode, max_steps=max_steps)
         self.observation_space = gym.spaces.Discrete(10)
         self.action_space = gym.spaces.Discrete(2)
 
@@ -154,6 +154,66 @@ class TestEnvInAgentUsage:
             "global_state": DummyBoardGameEnv.GLOBAL_STATE,
             "action_mask": DummyBoardGameEnv.ACTION_MASK,
         }
+
+
+class TestTruncation:
+    """Test truncation (max_steps) functionality."""
+
+    def test_default_max_steps_is_none(self):
+        env = DummyBoardGameEnv()
+        assert env.max_steps is None
+
+    def test_max_steps_can_be_set(self):
+        env = DummyBoardGameEnv(max_steps=100)
+        assert env.max_steps == 100
+
+    def test_current_step_starts_at_zero_after_reset(self):
+        env = DummyBoardGameEnv(max_steps=10)
+        env.reset()
+        assert env.current_step == 0
+
+    def test_current_step_increments_on_step(self):
+        env = DummyBoardGameEnv(max_steps=10)
+        env.reset()
+        env.step(0)
+        assert env.current_step == 1
+        env.step(0)
+        assert env.current_step == 2
+
+    def test_truncated_when_max_steps_reached(self):
+        env = DummyBoardGameEnv(max_steps=3)
+        env.reset()
+        _, _, _, truncated, _ = env.step(0)
+        assert truncated is False
+        _, _, _, truncated, _ = env.step(0)
+        assert truncated is False
+        _, _, _, truncated, _ = env.step(0)
+        assert truncated is True  # 3rd step reaches max_steps
+
+    def test_no_truncation_when_max_steps_is_none(self):
+        env = DummyBoardGameEnv(max_steps=None)
+        env.reset()
+        for _ in range(100):
+            _, _, _, truncated, _ = env.step(0)
+            assert truncated is False
+
+    def test_current_step_resets_on_reset(self):
+        env = DummyBoardGameEnv(max_steps=10)
+        env.reset()
+        env.step(0)
+        env.step(0)
+        assert env.current_step == 2
+        env.reset()
+        assert env.current_step == 0
+
+    def test_terminated_takes_priority_over_truncated(self):
+        """If game terminates naturally, truncated should still be False."""
+        env = DummyBoardGameEnv(max_steps=3)
+        env.TERMINATED = True  # Game will terminate
+        env.reset()
+        _, _, terminated, truncated, _ = env.step(0)
+        assert terminated is True
+        assert truncated is False  # Not truncated, naturally terminated
 
 
 class TestBoardGameEnvInteraction:

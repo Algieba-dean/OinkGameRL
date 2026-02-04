@@ -186,6 +186,13 @@ class ScoutGameEnv(BoardGameEnv):
         }
 
     def _get_action_mask(self, player_idx: int) -> list[int]:
+        """Get valid action mask with optimized filtering.
+
+        Optimization strategy:
+        - Pre-check global conditions (board state, token) before iterating
+        - Skip entire action type categories when not applicable
+        - Only check play validity for hand indices that exist
+        """
         mask = [0] * len(self._action_mapping)
 
         if self._game_state is None:
@@ -196,47 +203,64 @@ class ScoutGameEnv(BoardGameEnv):
         hand = list(player.hand)
         hand_count = player.hand_count
 
-        for action_idx, action_def in enumerate(self._action_mapping):
-            action_type = action_def["type"]
+        # Pre-compute conditions
+        board_empty = self._game_state.board.owner_idx == BoardConsts.EMPTY_OWNER_ID
+        has_token = player.scout_and_show_token
 
-            if action_type == "play":
-                start_idx = action_def["start_idx"]
-                end_idx = action_def["end_idx"]
+        # Import once outside loop
+        from games.scout.card.card_pattern_checker import CardPatternChecker
+        from games.scout.enums import CardPattern
 
-                if start_idx >= hand_count or end_idx >= hand_count:
+        # Build index ranges for each action type for faster lookup
+        play_end_idx = 0
+        scout_start_idx = 0
+        scout_play_start_idx = 0
+
+        for i, action_def in enumerate(self._action_mapping):
+            if action_def["type"] == "play":
+                play_end_idx = i + 1
+            elif action_def["type"] == "scout" and scout_start_idx == 0:
+                scout_start_idx = i
+            elif action_def["type"] == "scout_play" and scout_play_start_idx == 0:
+                scout_play_start_idx = i
+                break
+
+        # Process play actions (only check valid hand indices)
+        for action_idx in range(play_end_idx):
+            action_def = self._action_mapping[action_idx]
+            start_idx = action_def["start_idx"]
+            end_idx = action_def["end_idx"]
+
+            if start_idx >= hand_count or end_idx >= hand_count:
+                continue
+
+            target_cards = hand[start_idx : end_idx + 1]
+
+            if board_empty:
+                pattern = CardPatternChecker.get_pattern(cards=target_cards)
+                if pattern != CardPattern.INVALID_PATTERN:
+                    mask[action_idx] = 1
+            else:
+                if PlayableChecker.is_playable(
+                    board_cards=board_cards, target_cards=target_cards
+                ):
+                    mask[action_idx] = 1
+
+        # Process scout actions (skip if board is empty)
+        if not board_empty:
+            for action_idx in range(scout_start_idx, scout_play_start_idx):
+                action_def = self._action_mapping[action_idx]
+                if action_def["type"] != "scout":
                     continue
-
-                target_cards = hand[start_idx : end_idx + 1]
-
-                if not board_cards:
-                    from games.scout.card.card_pattern_checker import CardPatternChecker
-                    from games.scout.enums import CardPattern
-
-                    pattern = CardPatternChecker.get_pattern(cards=target_cards)
-                    if pattern != CardPattern.INVALID_PATTERN:
-                        mask[action_idx] = 1
-                else:
-                    if PlayableChecker.is_playable(
-                        board_cards=board_cards, target_cards=target_cards
-                    ):
-                        mask[action_idx] = 1
-
-            elif action_type == "scout":
                 insert_pos = action_def["insert_position"]
+                if insert_pos <= hand_count:
+                    mask[action_idx] = 1
 
-                if self._game_state.board.owner_idx == BoardConsts.EMPTY_OWNER_ID:
-                    continue
-                if insert_pos > hand_count:
-                    continue
-
-                mask[action_idx] = 1
-
-            elif action_type == "scout_play":
-                if not player.scout_and_show_token:
-                    continue
-                if self._game_state.board.owner_idx == BoardConsts.EMPTY_OWNER_ID:
-                    continue
-
+        # Process scout_play actions (skip if no token or board empty)
+        if has_token and not board_empty:
+            new_hand_count = hand_count + 1
+            for action_idx in range(scout_play_start_idx, len(self._action_mapping)):
+                action_def = self._action_mapping[action_idx]
                 insert_pos = action_def["insert_position"]
                 play_start = action_def["play_start_idx"]
                 play_end = action_def["play_end_idx"]
@@ -244,14 +268,11 @@ class ScoutGameEnv(BoardGameEnv):
                 if insert_pos > hand_count:
                     continue
 
-                new_hand_count = hand_count + 1
                 adj_start = play_start + 1 if insert_pos <= play_start else play_start
                 adj_end = play_end + 1 if insert_pos <= play_start else play_end
 
-                if adj_start >= new_hand_count or adj_end >= new_hand_count:
-                    continue
-
-                mask[action_idx] = 1
+                if adj_start < new_hand_count and adj_end < new_hand_count:
+                    mask[action_idx] = 1
 
         return mask
 

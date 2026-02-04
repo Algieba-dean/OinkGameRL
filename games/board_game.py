@@ -52,7 +52,9 @@ class BoardGameEnv(ABC, gym.Env):
     observation_space: gym.Space
     action_space: gym.Space
 
-    def __init__(self, render_mode: str | None = None) -> None:
+    def __init__(
+        self, render_mode: str | None = None, max_steps: int | None = None
+    ) -> None:
         """Initialize the board game environment.
 
         Args:
@@ -61,6 +63,9 @@ class BoardGameEnv(ABC, gym.Env):
                 - "human": Print to console
                 - "ansi": Return string representation
                 - "json": Return dict representation
+            max_steps: Maximum number of steps before truncation. If None,
+                no truncation occurs. This is important for RL training to
+                prevent infinite loops when agents play randomly.
 
         Raises:
             NotImplementedError: If render_mode is not supported.
@@ -69,6 +74,8 @@ class BoardGameEnv(ABC, gym.Env):
 
         self._current_player_idx: int = 0
         self._num_players: int = 0
+        self._max_steps: int | None = max_steps
+        self._current_step: int = 0
         if render_mode not in self.metadata["render_modes"]:
             raise NotImplementedError(
                 f"render mode {self.render_mode} is not supported"
@@ -77,27 +84,49 @@ class BoardGameEnv(ABC, gym.Env):
 
     @property
     def current_player_idx(self) -> int:
+        """Get the index of the current player."""
         return self._current_player_idx
 
     @property
     def num_players(self) -> int:
+        """Get the total number of players."""
         return self._num_players
 
+    @property
+    def max_steps(self) -> int | None:
+        """Get the maximum number of steps before truncation."""
+        return self._max_steps
+
+    @property
+    def current_step(self) -> int:
+        """Get the current step count."""
+        return self._current_step
+
     def step(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
-        """apply action for current player idx
+        """Apply action for current player and advance the game state.
 
         Args:
-            action (Any): the action which agent/player can play
+            action: The action to apply.
 
         Returns:
-            Dict[Any, float, bool, bool, Dict[str, Any]]: the observation of updated player idx, the reward of the player who took action, terminated:is game done, truncated, info:contains action mask for new player idx
+            Tuple of (observation, reward, terminated, truncated, info):
+                - observation: The new observation for the next player
+                - reward: The reward for the player who took the action
+                - terminated: Whether the game ended naturally
+                - truncated: Whether the game was cut short (max_steps reached)
+                - info: Dict with 'global_state' and 'action_mask'
         """
-
+        self._current_step += 1
         reward, terminated = self._apply_action(action=action)
-        truncated = False  # boardgame no need truncted
-        observation = self._get_observation(
-            player_idx=self.current_player_idx
-        )  # current player idx already updated, so it's the new players
+
+        # Truncate if max_steps reached and game hasn't terminated naturally
+        truncated = (
+            not terminated
+            and self._max_steps is not None
+            and self._current_step >= self._max_steps
+        )
+
+        observation = self._get_observation(player_idx=self.current_player_idx)
         global_state = self._get_global_state()
         action_mask = self._get_action_mask(player_idx=self.current_player_idx)
 
@@ -108,7 +137,17 @@ class BoardGameEnv(ABC, gym.Env):
     def reset(
         self, seed: int | None = None, options: dict[str, Any] | None = None
     ) -> tuple[Any, dict[str, Any]]:
+        """Reset the environment to initial state.
+
+        Args:
+            seed: Random seed for reproducibility.
+            options: Optional parameters for reset.
+
+        Returns:
+            Tuple of (observation, info) for the first player.
+        """
         super().reset(seed=seed, options=options)
+        self._current_step = 0
         self._reset_logic(seed=seed, options=options)
         observation = self._get_observation(player_idx=self.current_player_idx)
         global_state = self._get_global_state()

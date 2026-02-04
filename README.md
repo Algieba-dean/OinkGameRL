@@ -169,6 +169,11 @@ BoardGameRL/
 │   ├── registry.py             # Game registry for dynamic game loading
 │   ├── auto_opponent_wrapper.py # Wrapper for multi-agent environments
 │   │
+│   ├── core/                   # Shared utilities for RL training
+│   │   ├── base_player.py      # Generic base class for player management
+│   │   ├── reward_shaping.py   # Reward utilities (ranking, relative scores)
+│   │   └── observation_space.py # Observation space builder
+│   │
 │   │── # Oink Games
 │   ├── scout/                  # Scout game implementation
 │   ├── maskmen/                # Maskmen game implementation
@@ -232,6 +237,8 @@ All game environments inherit from `BoardGameEnv` and provide:
 # Properties
 env.num_players      # Number of players
 env.current_player_idx  # Current player's turn
+env.max_steps        # Maximum steps before truncation (optional)
+env.current_step     # Current step count
 
 # Methods
 obs, info = env.reset(seed=42)  # Reset game
@@ -241,6 +248,62 @@ env.render()  # Display game state
 # Info dict contains:
 info["action_mask"]   # Valid actions for current player
 info["global_state"]  # Full game state (for debugging/analysis)
+```
+
+### RL Training Utilities
+
+The `games.core` module provides utilities for professional RL training:
+
+#### Truncation Support (Preventing Infinite Loops)
+
+```python
+# Create environment with max_steps to prevent infinite episodes
+env = make_env("scout", max_steps=1000)
+obs, info = env.reset()
+
+# Game will truncate after 1000 steps if not terminated naturally
+obs, reward, terminated, truncated, info = env.step(action)
+if truncated:
+    print("Episode truncated due to max_steps")
+```
+
+#### Reward Shaping
+
+```python
+from games.core import RewardShaping
+
+# Ranking-based rewards (zero-sum, good for self-play)
+rewards = RewardShaping.ranking_reward(num_players=4, winner_idx=0)
+# [0.75, -0.25, -0.25, -0.25]
+
+# Relative score rewards (encourages maximizing gap vs opponents)
+scores = [100, 80, 60, 40]
+rewards = RewardShaping.relative_score_reward(scores, normalize=True)
+
+# Simple win/lose rewards
+rewards = RewardShaping.win_lose_reward(num_players=3, winner_idx=1)
+# [-1.0, 1.0, -1.0]
+```
+
+#### Observation Space Builder
+
+```python
+from games.core import ObservationSpaceBuilder
+
+# Build structured observation space (no magic numbers!)
+builder = (
+    ObservationSpaceBuilder()
+    .add_box("hand", shape=(MAX_HAND_SIZE, 2), low=0, high=1)
+    .add_box("board", shape=(MAX_BOARD_SIZE, 2), low=0, high=1)
+    .add_discrete("current_player", n=NUM_PLAYERS)
+)
+
+# Get flattened space for RL algorithms
+observation_space = builder.get_flat_space()
+
+# Flatten/unflatten observations
+flat_obs = builder.flatten(obs_dict)
+obs_dict = builder.unflatten(flat_obs)
 ```
 
 ---
