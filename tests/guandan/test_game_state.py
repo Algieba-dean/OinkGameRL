@@ -256,3 +256,18 @@ class TestGameStateEdgeCases:
             if card1.rank != card2.rank:
                 result = state.play([card1, card2])
                 assert result is False
+
+    def test_play_skips_finished_player(self):
+        """Test that play skips finished players."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+
+        # Mark player 0 as finished
+        player0 = state.get_player(0)
+        player0._finished = True
+
+        # Play should skip to next player
+        result = state.play([])
+        assert result is True
+        # Current player should have advanced past player 0
