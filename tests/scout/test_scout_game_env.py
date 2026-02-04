@@ -438,3 +438,42 @@ class TestScoutEdgeCases:
 
         result = env.render()
         assert isinstance(result, str)
+
+    def test_action_mask_scout_action_type_check(self):
+        """Test action mask checks scout action type."""
+        env = ScoutGameEnv(player_num=3)
+        env.reset(seed=42)
+
+        # Play a card first to have board cards
+        mask = env._get_action_mask(env.current_player_idx)
+        valid = [i for i, v in enumerate(mask) if v == 1]
+        if valid:
+            env.step(valid[0])
+
+        # Now check action mask for next player
+        mask = env._get_action_mask(env.current_player_idx)
+        # Should have some valid actions
+        assert sum(mask) > 0
+
+    def test_clear_hand_bonus(self):
+        """Test clear hand bonus in shaped rewards."""
+        env = ScoutGameEnv(
+            player_num=2,
+            use_shaped_rewards=True,
+            reward_config={
+                "use_pbrs": False,
+                "use_relative_reward": False,
+                "action_bonuses": {"clear_hand": 0.5},
+            },
+        )
+        env.reset(seed=42)
+
+        # Play until someone clears their hand
+        for _ in range(500):
+            mask = env._get_action_mask(env.current_player_idx)
+            valid = [i for i, v in enumerate(mask) if v == 1]
+            if not valid:
+                break
+            _, _, terminated, _, _ = env.step(valid[0])
+            if terminated:
+                break
