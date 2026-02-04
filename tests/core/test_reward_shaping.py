@@ -337,6 +337,30 @@ class TestPotentialFunctions:
         )
         assert potential < 0
 
+    def test_score_lead_potential_no_opponents(self):
+        """Test score lead potential with no opponents."""
+        potential = RewardShaping.score_lead_potential(
+            my_score=10,
+            opponent_scores=[],
+        )
+        assert potential == 0.0
+
+    def test_game_progress_potential_zero_initial(self):
+        """Test game progress potential with zero initial cards."""
+        potential = RewardShaping.game_progress_potential(
+            cards_remaining=5,
+            initial_cards=0,
+        )
+        assert potential == 0.0
+
+    def test_game_progress_potential_negative_initial(self):
+        """Test game progress potential with negative initial cards."""
+        potential = RewardShaping.game_progress_potential(
+            cards_remaining=5,
+            initial_cards=-1,
+        )
+        assert potential == 0.0
+
 
 class TestIntrinsicMotivation:
     """Test intrinsic motivation rewards."""
