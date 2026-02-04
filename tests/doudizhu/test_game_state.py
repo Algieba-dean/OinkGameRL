@@ -230,3 +230,50 @@ class TestGameStateEdgeCases:
         state.reset(rng)
         state.bid(want_landlord=True)
         assert state.last_play_info is None
+
+    def test_cannot_pass_when_you_played_last(self):
+        """Test that player who played last cannot pass."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.bid(want_landlord=True)
+
+        # Player 0 plays
+        player0 = state.get_player(0)
+        state.play([player0.hand[0]])
+
+        # Player 1 and 2 pass
+        state.play([])
+        state.play([])
+
+        # Now player 0 is current and last player
+        # They cannot pass (must play)
+        result = state.play([])
+        assert result is False
+
+    def test_get_winner_team_returns_none_before_finish(self):
+        """Test get_winner_team returns None before game ends."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.bid(want_landlord=True)
+        assert state.get_winner_team() is None
+
+    def test_play_must_beat_last_play(self):
+        """Test that play must beat the last play."""
+        state = GameState()
+        rng = np.random.default_rng(42)
+        state.reset(rng)
+        state.bid(want_landlord=True)
+
+        # Player 0 plays a high card
+        player0 = state.get_player(0)
+        high_card = max(player0.hand, key=lambda c: c.rank.value)
+        state.play([high_card])
+
+        # Player 1 tries to play a lower card
+        player1 = state.get_player(1)
+        low_card = min(player1.hand, key=lambda c: c.rank.value)
+        if low_card.rank.value < high_card.rank.value:
+            result = state.play([low_card])
+            assert result is False
