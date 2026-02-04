@@ -252,3 +252,120 @@ class TestScoutGameEnvGameplay:
 
         global_state = info["global_state"]
         assert "scores" in global_state
+
+
+class TestScoutGameEnvShapedRewards:
+    """Test shaped reward functionality."""
+
+    def test_init_with_shaped_rewards(self):
+        """Test initialization with shaped rewards enabled."""
+        env = ScoutGameEnv(player_num=4, use_shaped_rewards=True)
+        assert env._use_shaped_rewards is True
+        assert env._reward_config is not None
+
+    def test_init_with_custom_reward_config(self):
+        """Test initialization with custom reward config."""
+        custom_config = {
+            "use_pbrs": False,
+            "use_relative_reward": True,
+            "action_bonuses": {"clear_hand": 1.0},
+        }
+        env = ScoutGameEnv(
+            player_num=4, use_shaped_rewards=True, reward_config=custom_config
+        )
+        assert env._reward_config["use_pbrs"] is False
+        assert env._reward_config["action_bonuses"]["clear_hand"] == 1.0
+
+    def test_reset_initializes_hand_potentials(self):
+        """Test that reset initializes hand potentials when shaped rewards enabled."""
+        env = ScoutGameEnv(player_num=4, use_shaped_rewards=True)
+        env.reset(seed=42)
+        assert len(env._prev_hand_potential) == 4
+        for i in range(4):
+            assert i in env._prev_hand_potential
+            assert isinstance(env._prev_hand_potential[i], float)
+
+    def test_shaped_rewards_gameplay(self):
+        """Test gameplay with shaped rewards enabled."""
+        env = ScoutGameEnv(player_num=2, use_shaped_rewards=True)
+        _, info = env.reset(seed=42)
+        terminated = False
+        max_steps = 100
+
+        for _ in range(max_steps):
+            action_mask = info["action_mask"]
+            valid_actions = [i for i, v in enumerate(action_mask) if v == 1]
+            if not valid_actions:
+                break
+
+            action = np.random.choice(valid_actions)
+            _, reward, terminated, _, info = env.step(action)
+
+            # Shaped rewards should be floats
+            assert isinstance(reward, float)
+
+            if terminated:
+                break
+
+    def test_relative_reward_at_termination(self):
+        """Test relative reward calculation at game end."""
+        env = ScoutGameEnv(
+            player_num=2,
+            use_shaped_rewards=True,
+            reward_config={"use_relative_reward": True, "use_pbrs": False},
+        )
+        _, info = env.reset(seed=42)
+        terminated = False
+        max_steps = 500
+
+        for _ in range(max_steps):
+            action_mask = info["action_mask"]
+            valid_actions = [i for i, v in enumerate(action_mask) if v == 1]
+            if not valid_actions:
+                break
+
+            action = np.random.choice(valid_actions)
+            _, reward, terminated, _, info = env.step(action)
+
+            if terminated:
+                # Relative rewards should be normalized
+                assert -1.0 <= reward <= 1.0
+                break
+
+    def test_compute_hand_potential(self):
+        """Test hand potential computation."""
+        env = ScoutGameEnv(player_num=4, use_shaped_rewards=True)
+        env.reset(seed=42)
+        potential = env._compute_hand_potential(0)
+        assert isinstance(potential, float)
+        assert 0.0 <= potential <= 1.0
+
+    def test_compute_hand_potential_no_game_state(self):
+        """Test hand potential returns 0 when game state is None."""
+        env = ScoutGameEnv(player_num=4, use_shaped_rewards=True)
+        # Don't reset, so _game_state is None
+        potential = env._compute_hand_potential(0)
+        assert potential == 0.0
+
+    def test_pbrs_reward_shaping(self):
+        """Test PBRS reward shaping is applied."""
+        env = ScoutGameEnv(
+            player_num=2,
+            use_shaped_rewards=True,
+            reward_config={
+                "use_pbrs": True,
+                "pbrs_gamma": 0.99,
+                "use_relative_reward": False,
+                "action_bonuses": {},
+            },
+        )
+        _, info = env.reset(seed=42)
+
+        # Take a step and check that potential is updated
+        action_mask = info["action_mask"]
+        valid_actions = [i for i, v in enumerate(action_mask) if v == 1]
+        if valid_actions:
+            action = valid_actions[0]
+            env.step(action)
+            # Potential should be updated for player 0
+            assert 0 in env._prev_hand_potential
